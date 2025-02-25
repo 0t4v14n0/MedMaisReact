@@ -1,46 +1,51 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from './api';
 
 function Login() {
   const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // 👉 
 
+    try {
+      // Faz a requisição de login
+      const response = await api.post('/login', { email, password });
 
-    if (email === 'admin@example.com' && senha === '123456') {
-      alert('Login realizado com sucesso!');
-      navigate('/'); // Redireciona para a Home
-    } else {
-      alert('Credenciais inválidas. Tente novamente.');
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        navigate('/');
+      } else {
+        setError('Credenciais inválidas.');
+      }
+    } catch (err) {
+      setError('Erro ao fazer login. Tente novamente.');
+      console.error(err);
     }
   };
 
   return (
     <div>
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
+      <h1>Login</h1>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <form onSubmit={handleSubmit}>
         <div>
-          <label>Email:</label>
+          <label>E-mail:</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
           />
         </div>
         <div>
           <label>Senha:</label>
           <input
             type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
         </div>
         <button type="submit">Entrar</button>
