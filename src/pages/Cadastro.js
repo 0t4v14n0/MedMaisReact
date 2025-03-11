@@ -63,7 +63,7 @@ export default function Registro() {
     setLoading(true);
     try {
       await schema.validate(formData, { abortEarly: false }); // Validação
-      await axios.post(`${process.env.REACT_APP_API_URL}/pessoa/register`, formData);
+      await axios.post(`${process.env.REACT_APP_API_URL}/paciente/register`, formData);
       setMessage('Registro realizado com sucesso!');
       navigate('/login');
     } catch (error) {
@@ -100,14 +100,14 @@ export default function Registro() {
 
         <select name="tipoSanguineo" onChange={handleChange} required className="p-2 border rounded-xl">
           <option value="">Selecione o tipo sanguíneo</option>
-          <option value="A+">A+</option>
-          <option value="A-">A-</option>
-          <option value="B+">B+</option>
-          <option value="B-">B-</option>
-          <option value="AB+">AB+</option>
-          <option value="AB-">AB-</option>
-          <option value="O+">O+</option>
-          <option value="O-">O-</option>
+          <option value="A_POSITIVO">A+</option>
+          <option value="A_NEGATIVO">A-</option>
+          <option value="B_POSITIVO">B+</option>
+          <option value="B_NEGATIVO">B-</option>
+          <option value="AB_POSITIVO">AB+</option>
+          <option value="AB_NEGATIVO">AB-</option>
+          <option value="O_POSITIVO">O+</option>
+          <option value="O_NEGATIVO">O-</option>
         </select>
 
         <input name="contatoEmergencia" placeholder="Contato de emergência" onChange={handleChange} required className="p-2 border rounded-xl" />

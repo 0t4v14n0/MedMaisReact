@@ -1,23 +1,42 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from './api';
+import api from '../api/api';
 
 function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [login, setLogin] = useState('');
+  const [senha, setSenha] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
 
-    try {
-      // Faz a requisição de login
-      const response = await api.post('/login', { email, password });
+    console.log("Enviando login:", { login, senha });
 
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        navigate('/');
+    try {
+      // Faz a requisicao de login
+      const response = await api.post('/pessoa/login', { login, senha });
+
+      console.log(response.data);
+      
+      if (response.data.Token) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("roles", JSON.stringify(response.data.roles)); // Guardando roles corretamente
+      
+        // Recuperando corretamente o primeiro valor da role
+        const roles = JSON.parse(localStorage.getItem("roles"));
+        const role = roles ? roles[0] : null;
+      
+        if (role === 'PACIENTE') {
+          navigate('/paciente/dashboard');
+        } else if (role === 'MEDICO') {
+          navigate('/medico/dashboard');
+        } else if (role === 'ADMIN') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/');
+        }
       } else {
         setError('Credenciais inválidas.');
       }
@@ -33,19 +52,19 @@ function Login() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
         <div>
-          <label>E-mail:</label>
+          <label>Login:</label>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="login"
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
           />
         </div>
         <div>
           <label>Senha:</label>
           <input
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
           />
         </div>
         <button type="submit">Entrar</button>
