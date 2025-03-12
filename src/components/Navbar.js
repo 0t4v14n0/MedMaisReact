@@ -1,14 +1,15 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext"; // Importe o hook de autenticação
 
 const Navbar = () => {
-  const token = localStorage.getItem("token");
-  const roles = JSON.parse(localStorage.getItem("roles")) || []; // Recupera o array de roles
+  const { user, roles, logout } = useAuth(); // Pegando o estado do usuário e a função de logout
+
   const role = roles.length > 0 ? roles[0] : null; // Pega a primeira role
 
   return (
     <nav>
       <Link to="/">Home</Link>
-      {!token && (
+      {!user && (
         <>
           {" | "}
           <Link to="/login">Login</Link>
@@ -20,24 +21,33 @@ const Navbar = () => {
       {" | "}
       <Link to="/about">About</Link>
 
-      {token && role === "ADMIN" && (
+      {user && role === "ADMIN" && (
         <>
           {" | "}
           <Link to="/admin/dashboard">Admin</Link>
         </>
       )}
 
-      {token && role === "PACIENTE" && (
+      {user && role === "PACIENTE" && (
         <>
           {" | "}
           <Link to="/paciente/dashboard">Paciente</Link>
         </>
       )}
 
-      {token && role === "MEDICO" && (
+      {user && role === "MEDICO" && (
         <>
           {" | "}
           <Link to="/medico/dashboard">Médico</Link>
+        </>
+      )}
+
+      {user && (
+        <>
+          {" | "}
+          <button onClick={logout}>
+            Logout
+          </button>
         </>
       )}
     </nav>
