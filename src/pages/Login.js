@@ -20,8 +20,8 @@ function Login() {
 
       console.log(response.data);
 
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+      if (response.data.Token) {
+        localStorage.setItem("token", response.data.Token);
         localStorage.setItem("roles", JSON.stringify(response.data.roles));
 
         const roles = JSON.parse(localStorage.getItem("roles"));
@@ -37,11 +37,11 @@ function Login() {
           navigate('/');
         }
       } else {
-        setError('Credenciais inválidas.');
+        setError('Credenciais .');
       }
 
     } catch (err) {
-      // 💥 Aqui é onde trata o erro de e-mail não confirmado e outros
+
       if (err.response) {
         const status = err.response.status;
         const message = err.response.data;
