@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 
 function Login() {
+
   const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
   const [error, setError] = useState('');
@@ -15,19 +16,17 @@ function Login() {
     console.log("Enviando login:", { login, senha });
 
     try {
-      // Faz a requisicao de login
       const response = await api.post('/pessoa/login', { login, senha });
 
       console.log(response.data);
-      
-      if (response.data.Token) {
+
+      if (response.data.token) {
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("roles", JSON.stringify(response.data.roles)); // Guardando roles corretamente
-      
-        // Recuperando corretamente o primeiro valor da role
+        localStorage.setItem("roles", JSON.stringify(response.data.roles));
+
         const roles = JSON.parse(localStorage.getItem("roles"));
         const role = roles ? roles[0] : null;
-      
+
         if (role === 'PACIENTE') {
           navigate('/paciente/dashboard');
         } else if (role === 'MEDICO') {
@@ -40,8 +39,24 @@ function Login() {
       } else {
         setError('Credenciais inválidas.');
       }
+
     } catch (err) {
-      setError('Erro ao fazer login. Tente novamente.');
+      // 💥 Aqui é onde trata o erro de e-mail não confirmado e outros
+      if (err.response) {
+        const status = err.response.status;
+        const message = err.response.data;
+
+        if (status === 403 && message.includes("confirmar seu e-mail")) {
+          setError("Você precisa confirmar seu e-mail antes de fazer login.");
+        } else if (status === 401) {
+          setError("Credenciais inválidas.");
+        } else {
+          setError("Erro ao fazer login. Tente novamente.");
+        }
+      } else {
+        setError("Erro de conexão com o servidor.");
+      }
+
       console.error(err);
     }
   };
