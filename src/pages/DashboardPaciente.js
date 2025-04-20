@@ -5,13 +5,10 @@ import api from "../api/api";
 const Consulta = ({ setOpcaoSelecionada }) => {
 
   const [opcaoConsulta, setOpcaoConsulta] = useState("");
-  //const [medicos, setMedicos] = useState([]); // Estado para médicos
   const [especialidades, setEspecialidades] = useState([]);
   const [selectedEspecialidade, setSelectedEspecialidade] = useState("");
-  //const [selectedMedico, setSelectedMedico] = useState("");
-  //const [horario, setHorario] = useState("");
-  //const [mensagemErro, setMensagemErro] = useState("");
-  //const [loading, setLoading] = useState(true);
+  const [medicos, setMedicos] = useState([]);
+  const [selectedMedico, setSelectedMedico] = useState("");
   
   const navigate = useNavigate();
 
@@ -41,10 +38,28 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     fetchEspecialidades();
   }, []);
 
+  useEffect(() => {
+    const fetchMedicosPorEspecialidade = async () => {
+      if (!selectedEspecialidade) return;
+  
+      try {
+        const response = await api.get(`/medico/all/${selectedEspecialidade}`);
+        const content = response.data.body?.content || [];
+        setMedicos(content);
+      } catch (error) {
+        console.error("Erro ao buscar médicos:", error);
+        setMedicos([]);
+      }
+    };
+  
+    fetchMedicosPorEspecialidade();
+  }, [selectedEspecialidade]);
+
   const FormularioConsulta = ({ onSubmit }) => {
 
     const renderizarSelectEspecialidade = () => {
       return (
+
         <form onSubmit={onSubmit}>
           <label>Escolha uma Especialidade:</label>
           <select
@@ -62,9 +77,43 @@ const Consulta = ({ setOpcaoSelecionada }) => {
               <option disabled>Carregando especialidades...</option>
             )}
           </select>
-    
+
+          {selectedEspecialidade && (
+            <div style={{ marginTop: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                Escolha um Médico:
+              </label>
+
+              <div className="lista-medicos">
+                {medicos.length > 0 ? (
+                  medicos.map((medico, index) => (
+                    <div
+                      key={index}
+                      className={`medico-card ${selectedMedico === medico.crm ? 'selecionado' : ''}`}
+                      onClick={() => setSelectedMedico(medico.crm)}
+                      style={{
+                        border: '1px solid #ccc',
+                        borderRadius: '8px',
+                        padding: '10px',
+                        marginBottom: '10px',
+                        cursor: 'pointer',
+                        backgroundColor: selectedMedico === medico.crm ? '#e0f7fa' : '#fff',
+                      }}
+                    >
+                      <strong>{medico.dataDetalhesPessoa.nome}</strong> <br />
+                      CRM: {medico.crm}
+                    </div>
+                  ))
+                ) : (
+                  <p>Carregando médicos...</p>
+                )}
+              </div>
+            </div>
+          )}
+
           <button type="submit">Marcar Consulta</button>
         </form>
+
       );
     };
 
@@ -99,7 +148,7 @@ const Consulta = ({ setOpcaoSelecionada }) => {
         <button onClick={() => setOpcaoSelecionada("Dashboard")}>Voltar</button>
       </nav>
 
-      {/* Conteúdo dinâmico da consulta */}
+      {/* Conteudo dinamico da consulta */}
       <div style={{ padding: "20px", border: "1px solid #ccc", borderRadius: "8px" }}>
         <h2>Área de Consultas</h2>
         {renderizarConteudoConsulta()}

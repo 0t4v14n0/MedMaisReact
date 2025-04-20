@@ -9,8 +9,12 @@ const publicRoutes = ["/pessoa/login", "/pessoa/registro", "/medico/especialidad
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
+  const url = new URL(config.url, config.baseURL);
+  const path = url.pathname;
 
-  if (token && !publicRoutes.includes(config.url)) {
+  const isPublic = publicRoutes.some((route) => path.startsWith(route));
+
+  if (token && !isPublic) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
