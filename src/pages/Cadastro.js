@@ -1,33 +1,13 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import * as yup from 'yup';
-
-// Esquema de validação
-const schema = yup.object().shape({
-  nome: yup.string().required('Nome é obrigatório'),
-  cpf: yup.string().required('CPF é obrigatório').min(11, 'CPF inválido'),
-  email: yup.string().email('E-mail inválido').required('E-mail é obrigatório'),
-  telefone: yup.string().required('Telefone é obrigatório'),
-  dataNascimento: yup.date().required('Data de nascimento é obrigatória'),
-  login: yup.string().required('Login é obrigatório'),
-  senha: yup.string().min(6, 'Senha deve ter pelo menos 6 caracteres').required('Senha é obrigatória'),
-  endereco: yup.string().required('Endereço é obrigatório'),
-  cidade: yup.string().required('Cidade é obrigatória'),
-  estado: yup.string().required('Estado é obrigatório'),
-  cep: yup.string().required('CEP é obrigatório'),
-  pais: yup.string().required('País é obrigatório'),
-  tipoSanguineo: yup.string().required('Tipo sanguíneo é obrigatório'),
-  contatoEmergencia: yup.string().required('Contato de emergência é obrigatório'),
-  peso: yup.number().required('Peso é obrigatório').positive('Peso deve ser positivo'),
-  altura: yup.number().required('Altura é obrigatória').positive('Altura deve ser positiva'),
-});
+import api from '../api/api';
 
 export default function Registro() {
 
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(
+  {
     tipoSanguineo: '',
     contatoEmergencia: '',
     peso: '',
@@ -55,23 +35,60 @@ export default function Registro() {
   const [loading, setLoading] = useState(false); // Estado para carregamento
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+  
+    if (['login', 'senha', 'nome', 'cpf', 'email', 'telefone', 'dataNascimento'].includes(name)) {
+      setFormData((prev) => ({
+        ...prev,
+        dataRegistroPessoa: {
+          ...prev.dataRegistroPessoa,
+          [name]: value,
+        },
+      }));
+    } else if (['endereco', 'cidade', 'estado', 'cep', 'pais', 'referencia'].includes(name)) {
+      setFormData((prev) => ({
+        ...prev,
+        dataRegistroPessoa: {
+          ...prev.dataRegistroPessoa,
+          dataRegistroEndereco: {
+            ...prev.dataRegistroPessoa.dataRegistroEndereco,
+            [name]: value,
+          },
+        },
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
+  
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+  
+    console.log(JSON.stringify(formData, null, 2));
     setLoading(true);
+    setMessage(''); // limpa mensagem
+  
     try {
-      await schema.validate(formData, { abortEarly: false }); // Validação
-      await axios.post(`${process.env.REACT_APP_API_URL}/paciente/register`, formData);
+      await api.post('/paciente/register', formData);
       setMessage('Registro realizado com sucesso!');
       navigate('/login');
     } catch (error) {
-      if (error.name === 'ValidationError') {
-        setMessage(error.errors.join('\n')); // Exibe erros de validação
+      if (error.response) {
+        const { status, data } = error.response;
+        if (status === 500) {
+          setMessage(data);
+        } else {
+          setMessage(data);
+        }
+      } else if (error.request) {
+        setMessage(error.message);
       } else {
-        console.error(error);
-        setMessage('Erro ao realizar o registro. Verifique os dados e tente novamente.');
+        setMessage(error.message);
       }
     } finally {
       setLoading(false);

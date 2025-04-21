@@ -43,15 +43,16 @@ function Login() {
     } catch (err) {
 
       if (err.response) {
+
         const status = err.response.status;
         const message = err.response.data;
 
         if (status === 403 && message.includes("confirmar seu e-mail")) {
-          setError("Você precisa confirmar seu e-mail antes de fazer login.");
+          setError(message);
         } else if (status === 401) {
-          setError("Credenciais inválidas.");
+          setError(message);
         } else {
-          setError("Erro ao fazer login. Tente novamente.");
+          setError(message);
         }
       } else {
         setError("Erro de conexão com o servidor.");
