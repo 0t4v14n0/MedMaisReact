@@ -9,6 +9,9 @@ const Consulta = ({ setOpcaoSelecionada }) => {
   const [selectedEspecialidade, setSelectedEspecialidade] = useState("");
   const [medicos, setMedicos] = useState([]);
   const [selectedMedico, setSelectedMedico] = useState("");
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
+  const [selectedHorarioId, setSelectedHorarioId] = useState(null);
+
   
   const navigate = useNavigate();
 
@@ -55,6 +58,26 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     fetchMedicosPorEspecialidade();
   }, [selectedEspecialidade]);
 
+  useEffect(() => {
+    const fetchHorariosDiponivel = async () => {
+
+      try {
+        console.log("selectedMedico:", selectedMedico);
+        const response = await api.get(`/medico/${selectedMedico}/horarioDisponivel`);
+        console.log(response.data.body);
+        const horarios = response.data.body || [];
+        setHorariosDisponiveis(horarios);
+      } catch (error) {
+        console.error("Erro ao buscar horários de médico:", error);
+        setHorariosDisponiveis([]);
+      }
+    };
+  
+    if (selectedMedico) {
+      fetchHorariosDiponivel();
+    }
+  }, [selectedMedico]);
+
   const FormularioConsulta = ({ onSubmit }) => {
 
     const renderizarSelectEspecialidade = () => {
@@ -63,9 +86,15 @@ const Consulta = ({ setOpcaoSelecionada }) => {
         <form onSubmit={onSubmit}>
           <label>Escolha uma Especialidade:</label>
           <select
-            value={selectedEspecialidade}
-            onChange={(e) => setSelectedEspecialidade(e.target.value)}
-          >
+              value={selectedEspecialidade}
+              onChange={(e) => {
+                const novaEspecialidade = e.target.value;
+                setSelectedEspecialidade(novaEspecialidade);
+                setSelectedMedico(""); // limpa médico
+                setHorariosDisponiveis([]); // limpa horários
+                setSelectedHorarioId(null); // limpa horário selecionado
+              }}
+            >
             <option value="">Selecione uma especialidade</option>
             {especialidades.length > 0 ? (
               especialidades.map((especialidade, index) => (
@@ -85,6 +114,7 @@ const Consulta = ({ setOpcaoSelecionada }) => {
               </label>
 
               <div className="lista-medicos">
+
                 {medicos.length > 0 ? (
                   medicos.map((medico, index) => (
                     <div
@@ -99,9 +129,10 @@ const Consulta = ({ setOpcaoSelecionada }) => {
                         cursor: 'pointer',
                         backgroundColor: selectedMedico === medico.crm ? '#e0f7fa' : '#fff',
                       }}
-                    >
+                >
                       <strong>{medico.dataDetalhesPessoa.nome}</strong> <br />
                       CRM: {medico.crm}
+                      Valor da Consulta: {medico.valorConsulta}
                     </div>
                   ))
                 ) : (
@@ -111,7 +142,50 @@ const Consulta = ({ setOpcaoSelecionada }) => {
             </div>
           )}
 
-          <button type="submit">Marcar Consulta</button>
+          <div className="lista-horarios" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            {horariosDisponiveis.map((horario) => {
+              const dataFormatada = new Date(horario.horario).toLocaleString('pt-BR', {
+                dateStyle: 'short',
+                timeStyle: 'short'
+              });
+
+              return (
+                <div
+                  key={horario.id}
+                  onClick={() => setSelectedHorarioId(horario.id)}
+                  className={`horario-card ${selectedHorarioId === horario.id ? 'selecionado' : ''}`}
+                  style={{
+                    border: '1px solid #ccc',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    cursor: 'pointer',
+                    backgroundColor: selectedHorarioId === horario.id ? '#e0f7fa' : '#fff',
+                    minWidth: '120px',
+                    textAlign: 'center',
+                  }}
+                >
+                  {dataFormatada}
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            type="submit"
+            disabled={!selectedEspecialidade || !selectedMedico || !selectedHorarioId}
+            style={{
+              marginTop: '20px',
+              backgroundColor: (!selectedEspecialidade || !selectedMedico || !selectedHorarioId) ? '#ccc' : '#4caf50',
+              color: '#fff',
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: (!selectedEspecialidade || !selectedMedico || !selectedHorarioId) ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Marcar Consulta
+          </button>
+          
         </form>
 
       );
