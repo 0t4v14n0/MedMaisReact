@@ -1,32 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
+import { useAuth } from '../auth/AuthContext'; // importa o hook
 
 function Login() {
-
-  const [login, setLogin] = useState('');
+  const [login, setLoginInput] = useState('');
   const [senha, setSenha] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login: authLogin } = useAuth(); // pega a função login do contexto
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
-
-    console.log("Enviando login:", { login, senha });
 
     try {
       const response = await api.post('/pessoa/login', { login, senha });
 
-      console.log(response.data);
-
       if (response.data.Token) {
-        localStorage.setItem("token", response.data.Token);
-        localStorage.setItem("roles", JSON.stringify(response.data.roles));
+        const token = response.data.Token;
+        const roles = response.data.roles;
 
-        const roles = JSON.parse(localStorage.getItem("roles"));
-        const role = roles ? roles[0] : null;
+        authLogin(token, roles); // atualiza o contexto
 
+        const role = roles[0];
         if (role === 'PACIENTE') {
           navigate('/paciente/dashboard');
         } else if (role === 'MEDICO') {
@@ -37,13 +33,11 @@ function Login() {
           navigate('/');
         }
       } else {
-        setError('Credenciais .');
+        setError('Credenciais inválidas.');
       }
 
     } catch (err) {
-
       if (err.response) {
-
         const status = err.response.status;
         const message = err.response.data;
 
@@ -57,8 +51,6 @@ function Login() {
       } else {
         setError("Erro de conexão com o servidor.");
       }
-
-      console.error(err);
     }
   };
 
@@ -72,7 +64,7 @@ function Login() {
           <input
             type="login"
             value={login}
-            onChange={(e) => setLogin(e.target.value)}
+            onChange={(e) => setLoginInput(e.target.value)}
           />
         </div>
         <div>
