@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import api from "../api/api";
 
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
 const Consulta = ({ setOpcaoSelecionada }) => {
 
   const [opcaoConsulta, setOpcaoConsulta] = useState("");
@@ -10,7 +13,38 @@ const Consulta = ({ setOpcaoSelecionada }) => {
   const [medicos, setMedicos] = useState([]);
   const [selectedMedico, setSelectedMedico] = useState("");
   const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
+  const [dataSelecionada, setDataSelecionada] = useState(null);
   const [selectedHorarioId, setSelectedHorarioId] = useState(null);
+  
+  const datasDisponiveis = [
+    ...new Set(horariosDisponiveis.map(h =>
+      new Date(h.horario).toLocaleDateString('pt-BR')
+    ))
+  ];
+  
+  const datasDisponiveisObj = datasDisponiveis.map(dataStr => {
+    const [dia, mes, ano] = dataStr.split('/');
+    return new Date(ano, mes - 1, dia); // cuidado com mês
+  });
+
+  const horariosFiltrados = horariosDisponiveis.filter(h =>
+    new Date(h.horario).toLocaleDateString('pt-BR') ===
+    (dataSelecionada ? dataSelecionada.toLocaleDateString('pt-BR') : '')
+  );
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post("/consulta/agendar", {
+        idHorario: selectedHorarioId,
+        crmMedico: selectedMedico,
+      });
+      alert("Consulta marcada com sucesso!");
+    } catch (err) {
+      alert("Erro ao marcar consulta");
+      console.error(err);
+    }
+  };
 
   
   const navigate = useNavigate();
@@ -119,8 +153,8 @@ const Consulta = ({ setOpcaoSelecionada }) => {
                   medicos.map((medico, index) => (
                     <div
                       key={index}
-                      className={`medico-card ${selectedMedico === medico.crm ? 'selecionado' : ''}`}
-                      onClick={() => setSelectedMedico(medico.crm)}
+                      className={`medico-card ${selectedMedico === medico.crm.toString() ? 'selecionado' : ''}`}
+                      onClick={() => setSelectedMedico(medico.crm.toString())}
                       style={{
                         border: '1px solid #ccc',
                         borderRadius: '8px',
@@ -142,11 +176,23 @@ const Consulta = ({ setOpcaoSelecionada }) => {
             </div>
           )}
 
-          <div className="lista-horarios" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            {horariosDisponiveis.map((horario) => {
-              const dataFormatada = new Date(horario.horario).toLocaleString('pt-BR', {
-                dateStyle: 'short',
-                timeStyle: 'short'
+          <div className="lista-horarios" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px' }}>
+            {/* Passo 1: Só mostra o DatePicker se um médico estiver selecionado */}
+            {selectedMedico && (
+              <DatePicker
+                selected={dataSelecionada}
+                onChange={(date) => setDataSelecionada(date)}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="Selecione uma data"
+                includeDates={datasDisponiveisObj}
+              />
+            )}
+
+            {/* Passo 2: Só mostra os horários se uma data estiver selecionada */}
+            {dataSelecionada && horariosFiltrados.map((horario) => {
+              const hora = new Date(horario.horario).toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
               });
 
               return (
@@ -160,15 +206,16 @@ const Consulta = ({ setOpcaoSelecionada }) => {
                     padding: '10px',
                     cursor: 'pointer',
                     backgroundColor: selectedHorarioId === horario.id ? '#e0f7fa' : '#fff',
-                    minWidth: '120px',
+                    minWidth: '80px',
                     textAlign: 'center',
                   }}
                 >
-                  {dataFormatada}
+                  {hora}
                 </div>
               );
             })}
           </div>
+
 
           <button
             type="submit"
@@ -199,7 +246,7 @@ const Consulta = ({ setOpcaoSelecionada }) => {
   const renderizarConteudoConsulta = () => {
     switch (opcaoConsulta) {
       case "MarcaConsulta":
-        return <FormularioConsulta onSubmit={() => alert("Consulta marcada!")} />;
+        return <FormularioConsulta onSubmit={onSubmit} />;
       case "AtualizarConsulta":
         return <p>Opção para atualizar consultas já marcadas.</p>;
       case "CancelarConsulta":
