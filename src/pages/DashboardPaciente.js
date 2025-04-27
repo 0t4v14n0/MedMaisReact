@@ -36,8 +36,8 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     e.preventDefault();
     try {
       await api.post("/consulta/agendar", {
-        idHorario: selectedHorarioId,
-        crmMedico: selectedMedico,
+        crm: selectedMedico,
+        id: selectedHorarioId,
       });
       alert("Consulta marcada com sucesso!");
     } catch (err) {
@@ -247,11 +247,7 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     switch (opcaoConsulta) {
       case "MarcaConsulta":
         return <FormularioConsulta onSubmit={onSubmit} />;
-      case "AtualizarConsulta":
-        return <p>Opção para atualizar consultas já marcadas.</p>;
-      case "CancelarConsulta":
-        return <p>Opção para cancelar uma consulta existente.</p>;
-      case "ListarConsulta":
+      case "Lista de Consulta":
         return <p>Lista com todas as consultas agendadas.</p>;
       default:
         return <p>Selecione uma opção no menu para gerenciar suas consultas.</p>;
@@ -263,8 +259,6 @@ const Consulta = ({ setOpcaoSelecionada }) => {
       {/* Botões no topo */}
       <nav style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
         <button onClick={() => setOpcaoConsulta("MarcaConsulta")}>Marcar Consulta</button>
-        <button onClick={() => setOpcaoConsulta("AtualizarConsulta")}>Atualizar Consulta</button>
-        <button onClick={() => setOpcaoConsulta("CancelarConsulta")}>Cancelar Consulta</button>
         <button onClick={() => setOpcaoConsulta("ListarConsulta")}>Listar Consultas</button>
         <button onClick={() => setOpcaoSelecionada("Dashboard")}>Voltar</button>
       </nav>
