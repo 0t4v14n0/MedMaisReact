@@ -40,6 +40,7 @@ const Consulta = ({ setOpcaoSelecionada }) => {
         id: selectedHorarioId,
       });
       alert("Consulta marcada com sucesso!");
+      navigate("/home");
     } catch (err) {
       alert("Erro ao marcar consulta");
       console.error(err);
@@ -243,12 +244,303 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     );
   };
 
+  //
+  // PARTE LISTAGEM DE CONSULTAS
+  //
+
+  const [statusDisponiveis, setStatusDisponiveis] = useState([]);
+  const [selectedStatus, setSelectedStatus] = useState("TODAS");
+  const [consultas, setConsultas] = useState([]);
+
+  const [consultaParaAtualizar, setConsultaParaAtualizar] = useState(null);
+  const [horariosDisponiveisAtualizacao, setHorariosDisponiveisAtualizacao] = useState([]);
+  const [dataSelecionadaAtualizacao, setDataSelecionadaAtualizacao] = useState(null);
+  const [selectedHorarioIdAtualizacao, setSelectedHorarioIdAtualizacao] = useState(null);
+
+    // Buscar os status disponíveis
+  useEffect(() => {
+    const fetchStatusConsulta = async () => {
+      try {
+        const response = await api.get("/consulta/status");
+        console.log(response);
+        setStatusDisponiveis(response.data || []);
+      } catch (error) {
+        console.error("Erro ao buscar status:", error);
+      }
+    };
+    
+    if (opcaoConsulta === "ListarConsulta") {
+      fetchStatusConsulta();
+    }
+  }, [opcaoConsulta]);
+
+  // Buscar consultas com paginação e filtro
+  const fetchConsultas = async (selectedStatus) => {
+    try {
+      const response = await api.get(`/consulta/${selectedStatus}`);
+      console.log("Resposta da API:", response.data);
+      
+      // Ajuste para acessar os dados corretamente
+      const consultasData = response.data.content || [];
+      setConsultas(consultasData);
+      
+    } catch (error) {
+      console.error("Erro ao buscar consultas:", error);
+      setConsultas([]);
+    }
+  };
+
+  // Chamada inicial quando seleciona um status
+  useEffect(() => {
+    if (selectedStatus && opcaoConsulta === "ListarConsulta") {
+      fetchConsultas(selectedStatus);
+    }
+  }, [selectedStatus, opcaoConsulta]);
+
+  const cancelarConsulta = async (id) => {
+    try {
+      await api.delete(`/consulta/cancelar/${id}`);
+      alert("Consulta cancelada com sucesso!");
+      fetchConsultas(selectedStatus); // Recarrega a lista
+    } catch (error) {
+      console.error("Erro ao cancelar consulta:", error);
+      alert("Erro ao cancelar consulta.");
+    }
+  };
+
+  const abrirModalAtualizacao = async (consulta) => {
+    setConsultaParaAtualizar(consulta);
+    
+    try {
+      // Busca horários disponíveis para o médico da consulta
+      const response = await api.get(`/medico/${consulta.dataDetalhesMedico.crm}/horarioDisponivel`);
+      setHorariosDisponiveisAtualizacao(response.data.body || []);
+    } catch (error) {
+      console.error("Erro ao buscar horários:", error);
+      alert("Erro ao buscar horários disponíveis");
+    }
+  };
+  
+  const atualizarConsultaConfirmada = async () => {
+    if (!selectedHorarioIdAtualizacao || !consultaParaAtualizar) return;
+  
+    try {
+      // Encontra o horário selecionado
+      const horarioSelecionado = horariosDisponiveisAtualizacao
+        .find(h => h.id === selectedHorarioIdAtualizacao);
+      
+      if (!horarioSelecionado) {
+        throw new Error("Horário selecionado não encontrado");
+      }
+  
+      // Prepara os dados para a API
+      const dadosAtualizacao = {
+        idConsulta: consultaParaAtualizar.id,
+        idHorario: selectedHorarioIdAtualizacao, // Envia o ID do horário, não a data
+        novoHorarioConsulta: new Date(horarioSelecionado.horario).toISOString()
+      };
+  
+      console.log("Dados sendo enviados:", dadosAtualizacao);
+  
+      await api.put(`/consulta/atualizar`, dadosAtualizacao);
+      
+      alert("Consulta atualizada com sucesso!");
+      setConsultaParaAtualizar(null);
+      fetchConsultas(selectedStatus);
+    } catch (error) {
+      console.error("Erro ao atualizar consulta:", error);
+      alert(error.response?.data?.message || "Erro ao atualizar consulta.");
+    }
+  };
+
+
+  // Processa as datas disponíveis para o DatePicker
+  const datasDisponiveisAtualizacao = [
+    ...new Set(horariosDisponiveisAtualizacao.map(h =>
+      new Date(h.horario)
+    ))
+  ];
+
+  const ListarConsultas = () => {
+    return (
+      <div>
+        <div style={{ marginBottom: '20px' }}>
+          <label>Filtrar por Status: </label>
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            style={{ padding: '8px', borderRadius: '4px' }}
+          >
+            <option value="TODAS">TODAS</option>
+            {statusDisponiveis.map((status, index) => (
+              <option key={index} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </div>
+  
+        {consultas.length > 0 ? (
+          <div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f2f2f2' }}>
+                  <th style={{ padding: '10px', border: '1px solid #ddd' }}>Data</th>
+                  <th style={{ padding: '10px', border: '1px solid #ddd' }}>Horário</th>
+                  <th style={{ padding: '10px', border: '1px solid #ddd' }}>Médico</th>
+                  <th style={{ padding: '10px', border: '1px solid #ddd' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {consultas.map((consulta) => (
+                  <tr key={consulta.id} style={{ borderBottom: '1px solid #ddd' }}>
+                    <td style={{ padding: '10px' }}>
+                      {new Date(consulta.data).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      {new Date(consulta.data).toLocaleTimeString('pt-BR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      {consulta.dataDetalhesMedico.dataDetalhesPessoa.nome} (CRM: {consulta.dataDetalhesMedico.crm})
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      <span style={{ 
+                        color: consulta.statusConsula === 'CANCELADA' ? 'red' : 
+                               consulta.statusConsula === 'ABERTA' ? 'blue' : 
+                               consulta.statusConsula === 'NAO_COMPARECIDA' ? 'yellow' :
+                               consulta.statusConsula === 'CONCLUIDA' ? 'green' : 'inherit'
+                      }}>
+                        {consulta.statusConsula}
+                      </span>
+                      
+                      {consulta.statusConsula === 'ABERTA' && (
+                        <div style={{ marginTop: '8px' }}>
+                          {/* Alterado para abrirModalAtualizacao */}
+                          <button 
+                            onClick={() => abrirModalAtualizacao(consulta)} 
+                            style={{ marginRight: '8px' }}
+                          >
+                            Atualizar
+                          </button>
+                          <button onClick={() => cancelarConsulta(consulta.id)}>
+                            Cancelar
+                          </button>
+                        </div>
+                      )}
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p>Nenhuma consulta encontrada para o filtro selecionado.</p>
+        )}
+
+        {/* Modal de Atualização */}
+        {consultaParaAtualizar && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              padding: '20px',
+              borderRadius: '8px',
+              width: '80%',
+              maxWidth: '600px'
+            }}>
+              <h3>Atualizar Consulta</h3>
+              <p>Médico: {consultaParaAtualizar.dataDetalhesMedico.dataDetalhesPessoa.nome}</p>
+              
+              <div style={{ marginTop: '20px' }}>
+                <DatePicker
+                  selected={dataSelecionadaAtualizacao}
+                  onChange={(date) => {
+                    setDataSelecionadaAtualizacao(date);
+                    setSelectedHorarioIdAtualizacao(null);
+                  }}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Selecione uma data"
+                  includeDates={datasDisponiveisAtualizacao}
+                />
+              </div>
+  
+              {dataSelecionadaAtualizacao && (
+                <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {horariosDisponiveisAtualizacao
+                    .filter(h => 
+                      new Date(h.horario).toLocaleDateString('pt-BR') === 
+                      dataSelecionadaAtualizacao.toLocaleDateString('pt-BR')
+                    )
+                    .map(horario => {
+                      const hora = new Date(horario.horario).toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+  
+                      return (
+                        <div
+                          key={horario.id}
+                          onClick={() => setSelectedHorarioIdAtualizacao(horario.id)}
+                          style={{
+                            border: '1px solid',
+                            borderColor: selectedHorarioIdAtualizacao === horario.id ? '#4CAF50' : '#ddd',
+                            borderRadius: '4px',
+                            padding: '8px',
+                            cursor: 'pointer',
+                            backgroundColor: selectedHorarioIdAtualizacao === horario.id ? '#e8f5e9' : 'white'
+                          }}
+                        >
+                          {hora}
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+  
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button onClick={() => setConsultaParaAtualizar(null)}>
+                  Cancelar
+                </button>
+                <button 
+                  onClick={atualizarConsultaConfirmada}
+                  disabled={!selectedHorarioIdAtualizacao}
+                  style={{
+                    backgroundColor: !selectedHorarioIdAtualizacao ? '#ccc' : '#4CAF50',
+                    color: 'white'
+                  }}
+                >
+                  Confirmar Atualização
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+
+      </div>
+    );
+  };
+
   const renderizarConteudoConsulta = () => {
     switch (opcaoConsulta) {
       case "MarcaConsulta":
         return <FormularioConsulta onSubmit={onSubmit} />;
-      case "Lista de Consulta":
-        return <p>Lista com todas as consultas agendadas.</p>;
+      case "ListarConsulta":
+        return <ListarConsultas />;
       default:
         return <p>Selecione uma opção no menu para gerenciar suas consultas.</p>;
     }
@@ -256,7 +548,7 @@ const Consulta = ({ setOpcaoSelecionada }) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-      {/* Botões no topo */}
+      {/* Botoes no topo */}
       <nav style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
         <button onClick={() => setOpcaoConsulta("MarcaConsulta")}>Marcar Consulta</button>
         <button onClick={() => setOpcaoConsulta("ListarConsulta")}>Listar Consultas</button>
