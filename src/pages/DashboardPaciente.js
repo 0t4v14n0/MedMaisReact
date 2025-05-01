@@ -257,6 +257,14 @@ const Consulta = ({ setOpcaoSelecionada }) => {
   const [dataSelecionadaAtualizacao, setDataSelecionadaAtualizacao] = useState(null);
   const [selectedHorarioIdAtualizacao, setSelectedHorarioIdAtualizacao] = useState(null);
 
+  const [paginaAtual, setPaginaAtual] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(0);
+
+  useEffect(() => {
+    fetchConsultas(selectedStatus, paginaAtual);
+  }, [selectedStatus, paginaAtual]);
+  
+
     // Buscar os status disponíveis
   useEffect(() => {
     const fetchStatusConsulta = async () => {
@@ -275,20 +283,25 @@ const Consulta = ({ setOpcaoSelecionada }) => {
   }, [opcaoConsulta]);
 
   // Buscar consultas com paginação e filtro
-  const fetchConsultas = async (selectedStatus) => {
+  const fetchConsultas = async (selectedStatus, page = 0) => {
     try {
-      const response = await api.get(`/consulta/${selectedStatus}`);
+      const response = await api.get(`/consulta/${selectedStatus}`, {
+        params: { page: page, size: 10 } // aqui você define o tamanho da página
+      });
+  
       console.log("Resposta da API:", response.data);
-      
-      // Ajuste para acessar os dados corretamente
+  
       const consultasData = response.data.content || [];
       setConsultas(consultasData);
-      
+      setTotalPaginas(response.data.totalPages);
+      setPaginaAtual(response.data.number); // mantém sincronizado com a API
+  
     } catch (error) {
       console.error("Erro ao buscar consultas:", error);
       setConsultas([]);
     }
   };
+  
 
   // Chamada inicial quando seleciona um status
   useEffect(() => {
@@ -437,6 +450,8 @@ const Consulta = ({ setOpcaoSelecionada }) => {
               </tbody>
             </table>
           </div>
+
+          
         ) : (
           <p>Nenhuma consulta encontrada para o filtro selecionado.</p>
         )}
@@ -529,6 +544,27 @@ const Consulta = ({ setOpcaoSelecionada }) => {
             </div>
           </div>
         )}
+
+        {/* Botoes pajinacao */}
+
+        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+          <button 
+            onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 0))}
+            disabled={paginaAtual === 0}
+          >
+            Anterior
+          </button>
+
+          <span>Página {paginaAtual + 1} de {totalPaginas}</span>
+
+          <button 
+            onClick={() => setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas - 1))}
+            disabled={paginaAtual + 1 >= totalPaginas}
+          >
+            Próximo
+          </button>
+        </div>
+
 
 
       </div>
