@@ -12,6 +12,7 @@ import DashboardPaciente from "./pages/DashboardPaciente";
 import DashboardAdmin from "./pages/DashboardAdmin";
 
 function App() {
+  
   return (
     <AuthProvider>
       <Router>
@@ -36,6 +37,7 @@ function App() {
           <Route element={<PrivateRoute allowedRoles={["ADMIN"]} />}>
             <Route path="/admin/dashboard" element={<DashboardAdmin />} />
           </Route>
+
         </Routes>
       </Router>
     </AuthProvider>

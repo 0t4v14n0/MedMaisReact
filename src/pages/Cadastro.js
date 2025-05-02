@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
+import '../styles/cadastro.css';
 
 export default function Registro() {
-
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState(
-  {
+  const [formData, setFormData] = useState({
     tipoSanguineo: '',
     contatoEmergencia: '',
     peso: '',
@@ -31,8 +30,8 @@ export default function Registro() {
     }
   });
 
-  const [message, setMessage] = useState(''); // Estado para mensagens
-  const [loading, setLoading] = useState(false); // Estado para carregamento
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,32 +62,24 @@ export default function Registro() {
       }));
     }
   };
-  
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    console.log(JSON.stringify(formData, null, 2));
     setLoading(true);
-    setMessage(''); // limpa mensagem
-  
+    setMessage('');
+
     try {
       await api.post('/paciente/register', formData);
       setMessage('Registro realizado com sucesso!');
-      navigate('/login');
+      setTimeout(() => navigate('/login'), 1500);
     } catch (error) {
       if (error.response) {
         const { status, data } = error.response;
-        if (status === 500) {
-          setMessage(data);
-        } else {
-          setMessage(data);
-        }
+        setMessage(status === 500 ? data : data.message || 'Erro no registro');
       } else if (error.request) {
-        setMessage(error.message);
+        setMessage('Sem resposta do servidor');
       } else {
-        setMessage(error.message);
+        setMessage('Erro ao configurar a requisição');
       }
     } finally {
       setLoading(false);
@@ -96,45 +87,102 @@ export default function Registro() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-8 bg-white shadow-2xl rounded-2xl">
-      <h2 className="text-2xl font-semibold text-center mb-6">Cadastro</h2>
-      {message && <p className="text-red-500 mb-4">{message}</p>}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
-        <input name="nome" placeholder="Nome completo" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="cpf" placeholder="CPF" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="email" type="email" placeholder="Email" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="telefone" placeholder="Telefone" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="dataNascimento" type="date" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="login" placeholder="Login" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="senha" type="password" placeholder="Senha" onChange={handleChange} required className="p-2 border rounded-xl" />
+    <div className="registro-container">
+      <div className="registro-card">
+        <h2 className="registro-title">Cadastro</h2>
+        {message && <p className={`registro-message ${message.includes('sucesso') ? 'success' : 'error'}`}>{message}</p>}
+        
+        <form onSubmit={handleSubmit} className="registro-form">
+          <div className="form-section">
+            <h3 className="section-title">Dados Pessoais</h3>
+            <div className="form-group">
+              <input name="nome" placeholder="Nome completo" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="cpf" placeholder="CPF" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="email" type="email" placeholder="Email" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="telefone" placeholder="Telefone" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Data de Nascimento</label>
+              <input name="dataNascimento" type="date" onChange={handleChange} required />
+            </div>
+          </div>
 
-        <input name="endereco" placeholder="Endereço" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="cidade" placeholder="Cidade" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="estado" placeholder="Estado" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="cep" placeholder="CEP" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="pais" placeholder="País" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="referencia" placeholder="Referência" onChange={handleChange} className="p-2 border rounded-xl" />
+          <div className="form-section">
+            <h3 className="section-title">Credenciais</h3>
+            <div className="form-group">
+              <input name="login" placeholder="Login" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="senha" type="password" placeholder="Senha" onChange={handleChange} required />
+            </div>
+          </div>
 
-        <select name="tipoSanguineo" onChange={handleChange} required className="p-2 border rounded-xl">
-          <option value="">Selecione o tipo sanguíneo</option>
-          <option value="A_POSITIVO">A+</option>
-          <option value="A_NEGATIVO">A-</option>
-          <option value="B_POSITIVO">B+</option>
-          <option value="B_NEGATIVO">B-</option>
-          <option value="AB_POSITIVO">AB+</option>
-          <option value="AB_NEGATIVO">AB-</option>
-          <option value="O_POSITIVO">O+</option>
-          <option value="O_NEGATIVO">O-</option>
-        </select>
+          <div className="form-section">
+            <h3 className="section-title">Endereço</h3>
+            <div className="form-group">
+              <input name="endereco" placeholder="Endereço" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="cidade" placeholder="Cidade" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="estado" placeholder="Estado" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="cep" placeholder="CEP" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="pais" placeholder="País" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="referencia" placeholder="Referência" onChange={handleChange} />
+            </div>
+          </div>
 
-        <input name="contatoEmergencia" placeholder="Contato de emergência" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="peso" type="number" placeholder="Peso (kg)" onChange={handleChange} required className="p-2 border rounded-xl" />
-        <input name="altura" type="number" placeholder="Altura (cm)" onChange={handleChange} required className="p-2 border rounded-xl" />
+          <div className="form-section">
+            <h3 className="section-title">Informações de Saúde</h3>
+            <div className="form-group">
+              <select name="tipoSanguineo" onChange={handleChange} required>
+                <option value="">Selecione o tipo sanguíneo</option>
+                <option value="A_POSITIVO">A+</option>
+                <option value="A_NEGATIVO">A-</option>
+                <option value="B_POSITIVO">B+</option>
+                <option value="B_NEGATIVO">B-</option>
+                <option value="AB_POSITIVO">AB+</option>
+                <option value="AB_NEGATIVO">AB-</option>
+                <option value="O_POSITIVO">O+</option>
+                <option value="O_NEGATIVO">O-</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <input name="contatoEmergencia" placeholder="Contato de emergência" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="peso" type="number" placeholder="Peso (kg)" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <input name="altura" type="number" placeholder="Altura (cm)" onChange={handleChange} required />
+            </div>
+          </div>
 
-        <button type="submit" disabled={loading} className="bg-blue-500 text-white p-2 rounded-xl hover:bg-blue-600 transition-all">
-          {loading ? 'Carregando...' : 'Registrar'}
-        </button>
-      </form>
+          <button type="submit" disabled={loading} className="submit-button">
+            {loading ? (
+              <>
+                <span className="spinner"></span>
+                Carregando...
+              </>
+            ) : (
+              'Registrar'
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
