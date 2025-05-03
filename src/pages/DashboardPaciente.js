@@ -1,12 +1,229 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import api from "../api/api";
-
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const Consulta = ({ setOpcaoSelecionada }) => {
+// Estilos globais
+const styles = {
+  container: {
+    display: "flex",
+    minHeight: "100vh",
+    backgroundColor: "#f5f7fa",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+  },
+  sidebar: {
+    width: "250px",
+    backgroundColor: "#2c3e50",
+    color: "#ecf0f1",
+    padding: "20px 0",
+    boxShadow: "2px 0 5px rgba(0,0,0,0.1)"
+  },
+  sidebarList: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0
+  },
+  sidebarItem: {
+    padding: "12px 20px",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    display: "flex",
+    alignItems: "center",
+    borderLeft: "4px solid transparent"
+  },
+  sidebarItemHover: {
+    backgroundColor: "#34495e",
+    borderLeft: "4px solid #3498db"
+  },
+  sidebarIcon: {
+    marginRight: "10px",
+    fontSize: "18px"
+  },
+  content: {
+    flex: 1,
+    padding: "30px",
+    backgroundColor: "#f5f7fa"
+  },
+  card: {
+    backgroundColor: "white",
+    borderRadius: "8px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+    padding: "25px",
+    marginBottom: "30px"
+  },
+  title: {
+    color: "#2c3e50",
+    marginBottom: "20px",
+    fontSize: "24px",
+    fontWeight: "600",
+    borderBottom: "1px solid #eee",
+    paddingBottom: "10px"
+  },
+  button: {
+    backgroundColor: "#3498db",
+    color: "white",
+    border: "none",
+    padding: "10px 20px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "500",
+    transition: "all 0.3s ease",
+    marginRight: "10px",
+    marginBottom: "10px",
+    '&:hover': {
+      backgroundColor: "#2980b9"
+    },
+    '&:disabled': {
+      backgroundColor: "#bdc3c7",
+      cursor: "not-allowed"
+    }
+  },
+  buttonDanger: {
+    backgroundColor: "#e74c3c",
+    '&:hover': {
+      backgroundColor: "#c0392b"
+    }
+  },
+  buttonSuccess: {
+    backgroundColor: "#2ecc71",
+    '&:hover': {
+      backgroundColor: "#27ae60"
+    }
+  },
+  formGroup: {
+    marginBottom: "20px"
+  },
+  label: {
+    display: "block",
+    marginBottom: "8px",
+    fontWeight: "500",
+    color: "#34495e"
+  },
+  select: {
+    width: "100%",
+    padding: "10px",
+    borderRadius: "4px",
+    border: "1px solid #ddd",
+    fontSize: "14px",
+    transition: "all 0.3s ease",
+    '&:focus': {
+      borderColor: "#3498db",
+      outline: "none",
+      boxShadow: "0 0 0 2px rgba(52,152,219,0.2)"
+    }
+  },
+  doctorCard: {
+    border: "1px solid #e0e0e0",
+    borderRadius: "8px",
+    padding: "15px",
+    marginBottom: "15px",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    '&:hover': {
+      borderColor: "#3498db",
+      boxShadow: "0 2px 8px rgba(52,152,219,0.1)"
+    }
+  },
+  doctorCardSelected: {
+    borderColor: "#3498db",
+    backgroundColor: "#e8f4fc"
+  },
+  timeSlot: {
+    display: "inline-block",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    padding: "8px 15px",
+    margin: "5px",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    '&:hover': {
+      borderColor: "#3498db",
+      backgroundColor: "#f0f7fd"
+    }
+  },
+  timeSlotSelected: {
+    borderColor: "#3498db",
+    backgroundColor: "#3498db",
+    color: "white"
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    marginTop: "20px"
+  },
+  tableHeader: {
+    backgroundColor: "#2c3e50",
+    color: "white",
+    textAlign: "left",
+    padding: "12px"
+  },
+  tableRow: {
+    borderBottom: "1px solid #eee",
+    '&:nth-child(even)': {
+      backgroundColor: "#f9f9f9"
+    },
+    '&:hover': {
+      backgroundColor: "#f5f5f5"
+    }
+  },
+  tableCell: {
+    padding: "12px"
+  },
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: "25px",
+    borderRadius: "8px",
+    width: "80%",
+    maxWidth: "600px",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.15)"
+  },
+  pagination: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: "20px",
+    gap: "10px"
+  },
+  statusIndicator: {
+    display: "inline-block",
+    padding: "4px 8px",
+    borderRadius: "4px",
+    fontWeight: "500",
+    fontSize: "12px"
+  },
+  statusOpen: {
+    backgroundColor: "#d4edff",
+    color: "#004085"
+  },
+  statusCanceled: {
+    backgroundColor: "#f8d7da",
+    color: "#721c24"
+  },
+  statusCompleted: {
+    backgroundColor: "#d4edda",
+    color: "#155724"
+  },
+  statusNoShow: {
+    backgroundColor: "#fff3cd",
+    color: "#856404"
+  }
+};
 
+const Consulta = ({ setOpcaoSelecionada }) => {
   const [opcaoConsulta, setOpcaoConsulta] = useState("");
   const [especialidades, setEspecialidades] = useState([]);
   const [selectedEspecialidade, setSelectedEspecialidade] = useState("");
@@ -16,21 +233,16 @@ const Consulta = ({ setOpcaoSelecionada }) => {
   const [dataSelecionada, setDataSelecionada] = useState(null);
   const [selectedHorarioId, setSelectedHorarioId] = useState(null);
   
-  const datasDisponiveis = [
-    ...new Set(horariosDisponiveis.map(h =>
-      new Date(h.horario).toLocaleDateString('pt-BR')
-    ))
-  ];
+  
+  const datasStrings = horariosDisponiveis.map(h => {
+    return new Date(h.horario).toLocaleDateString('pt-BR');
+  });
+  const datasDisponiveis = [...new Set(datasStrings)];
   
   const datasDisponiveisObj = datasDisponiveis.map(dataStr => {
     const [dia, mes, ano] = dataStr.split('/');
-    return new Date(ano, mes - 1, dia); // cuidado com mês
+    return new Date(ano, mes - 1, dia);
   });
-
-  const horariosFiltrados = horariosDisponiveis.filter(h =>
-    new Date(h.horario).toLocaleDateString('pt-BR') ===
-    (dataSelecionada ? dataSelecionada.toLocaleDateString('pt-BR') : '')
-  );
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -47,10 +259,9 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     }
   };
 
-  
   const navigate = useNavigate();
 
-  useEffect(() => {// voltar a pagina pardao
+  useEffect(() => {
     if (opcaoConsulta === "Dashboard") {
       navigate("/paciente/dashboard");
     }
@@ -60,9 +271,6 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     const fetchEspecialidades = async () => {
       try {
         const response = await api.get("/medico/especialidade");
-        console.log(response.data);
-
-        // Ajustando para pegar a lista correta do corpo da resposta
         if (Array.isArray(response.data.body)) {
           setEspecialidades(response.data.body);
         } else {
@@ -72,14 +280,12 @@ const Consulta = ({ setOpcaoSelecionada }) => {
         console.error("Erro ao buscar especialidades:", error);
       }
     };
-
     fetchEspecialidades();
   }, []);
 
   useEffect(() => {
     const fetchMedicosPorEspecialidade = async () => {
       if (!selectedEspecialidade) return;
-  
       try {
         const response = await api.get(`/medico/all/${selectedEspecialidade}`);
         const content = response.data.body?.content || [];
@@ -89,17 +295,13 @@ const Consulta = ({ setOpcaoSelecionada }) => {
         setMedicos([]);
       }
     };
-  
     fetchMedicosPorEspecialidade();
   }, [selectedEspecialidade]);
 
   useEffect(() => {
     const fetchHorariosDiponivel = async () => {
-
       try {
-        console.log("selectedMedico:", selectedMedico);
         const response = await api.get(`/medico/${selectedMedico}/horarioDisponivel`);
-        console.log(response.data.body);
         const horarios = response.data.body || [];
         setHorariosDisponiveis(horarios);
       } catch (error) {
@@ -107,170 +309,157 @@ const Consulta = ({ setOpcaoSelecionada }) => {
         setHorariosDisponiveis([]);
       }
     };
-  
     if (selectedMedico) {
       fetchHorariosDiponivel();
     }
   }, [selectedMedico]);
 
   const FormularioConsulta = ({ onSubmit }) => {
-
     const renderizarSelectEspecialidade = () => {
       return (
-
-        <form onSubmit={onSubmit}>
-          <label>Escolha uma Especialidade:</label>
-          <select
+        <form onSubmit={onSubmit} style={styles.card}>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Escolha uma Especialidade:</label>
+            <select
+              style={styles.select}
               value={selectedEspecialidade}
               onChange={(e) => {
                 const novaEspecialidade = e.target.value;
                 setSelectedEspecialidade(novaEspecialidade);
-                setSelectedMedico(""); // limpa médico
-                setHorariosDisponiveis([]); // limpa horários
-                setSelectedHorarioId(null); // limpa horário selecionado
+                setSelectedMedico("");
+                setHorariosDisponiveis([]);
+                setSelectedHorarioId(null);
               }}
             >
-            <option value="">Selecione uma especialidade</option>
-            {especialidades.length > 0 ? (
-              especialidades.map((especialidade, index) => (
-                <option key={index} value={especialidade}>
-                  {especialidade}
-                </option>
-              ))
-            ) : (
-              <option disabled>Carregando especialidades...</option>
-            )}
-          </select>
+              <option value="">Selecione uma especialidade</option>
+              {especialidades.length > 0 ? (
+                especialidades.map((especialidade, index) => (
+                  <option key={index} value={especialidade}>
+                    {especialidade}
+                  </option>
+                ))
+              ) : (
+                <option disabled>Carregando especialidades...</option>
+              )}
+            </select>
+          </div>
 
           {selectedEspecialidade && (
-            <div style={{ marginTop: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
-                Escolha um Médico:
-              </label>
-
+            <div style={{ marginTop: '30px' }}>
+              <label style={styles.label}>Escolha um Médico:</label>
               <div className="lista-medicos">
-
                 {medicos.length > 0 ? (
                   medicos.map((medico, index) => (
                     <div
                       key={index}
-                      className={`medico-card ${selectedMedico === medico.crm.toString() ? 'selecionado' : ''}`}
-                      onClick={() => setSelectedMedico(medico.crm.toString())}
                       style={{
-                        border: '1px solid #ccc',
-                        borderRadius: '8px',
-                        padding: '10px',
-                        marginBottom: '10px',
-                        cursor: 'pointer',
-                        backgroundColor: selectedMedico === medico.crm ? '#e0f7fa' : '#fff',
+                        ...styles.doctorCard,
+                        ...(selectedMedico === medico.crm.toString() ? styles.doctorCardSelected : {})
                       }}
-                >
-                      <strong>{medico.dataDetalhesPessoa.nome}</strong> <br />
-                      CRM: {medico.crm}
-                      Valor da Consulta: {medico.valorConsulta}
+                      onClick={() => setSelectedMedico(medico.crm.toString())}
+                    >
+                      <strong style={{ fontSize: '16px', color: '#2c3e50' }}>{medico.dataDetalhesPessoa.nome}</strong>
+                      <div style={{ marginTop: '5px', color: '#7f8c8d' }}>CRM: {medico.crm}</div>
+                      <div style={{ marginTop: '5px', color: '#27ae60', fontWeight: '500' }}>
+                        Valor da Consulta: R$ {medico.valorConsulta.toFixed(2)}
+                      </div>
                     </div>
                   ))
                 ) : (
-                  <p>Carregando médicos...</p>
+                  <p style={{ color: '#7f8c8d' }}>Nenhum médico encontrado para esta especialidade.</p>
                 )}
               </div>
             </div>
           )}
 
-          <div className="lista-horarios" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '20px' }}>
-            {/* Passo 1: Só mostra o DatePicker se um médico estiver selecionado */}
-            {selectedMedico && (
-              <DatePicker
-                selected={dataSelecionada}
-                onChange={(date) => setDataSelecionada(date)}
-                dateFormat="dd/MM/yyyy"
-                placeholderText="Selecione uma data"
-                includeDates={datasDisponiveisObj}
-              />
-            )}
-
-            {/* Passo 2: Só mostra os horários se uma data estiver selecionada */}
-            {dataSelecionada && horariosFiltrados.map((horario) => {
-              const hora = new Date(horario.horario).toLocaleTimeString('pt-BR', {
-                hour: '2-digit',
-                minute: '2-digit',
-              });
-
-              return (
-                <div
-                  key={horario.id}
-                  onClick={() => setSelectedHorarioId(horario.id)}
-                  className={`horario-card ${selectedHorarioId === horario.id ? 'selecionado' : ''}`}
-                  style={{
-                    border: '1px solid #ccc',
-                    borderRadius: '8px',
-                    padding: '10px',
-                    cursor: 'pointer',
-                    backgroundColor: selectedHorarioId === horario.id ? '#e0f7fa' : '#fff',
-                    minWidth: '80px',
-                    textAlign: 'center',
-                  }}
-                >
-                  {hora}
+          {selectedMedico && (
+            <div style={{ marginTop: '30px' }}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Selecione uma data disponível:</label>
+                <div style={{ maxWidth: '300px' }}>
+                  <DatePicker
+                    selected={dataSelecionada}
+                    onChange={(date) => setDataSelecionada(date)}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="Selecione uma data"
+                    includeDates={datasDisponiveisObj}
+                    className="date-picker"
+                    style={styles.select}
+                  />
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+          )}
 
+          {dataSelecionada && (
+            <div style={{ marginTop: '20px' }}>
+              <label style={styles.label}>Horários disponíveis:</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {horariosFiltrados.length > 0 ? (
+                  horariosFiltrados.map((horario) => {
+                    const hora = new Date(horario.horario).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
+
+                    return (
+                      <div
+                        key={horario.id}
+                        onClick={() => setSelectedHorarioId(horario.id)}
+                        style={{
+                          ...styles.timeSlot,
+                          ...(selectedHorarioId === horario.id ? styles.timeSlotSelected : {})
+                        }}
+                      >
+                        {hora}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p style={{ color: '#7f8c8d' }}>Nenhum horário disponível para esta data.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={!selectedEspecialidade || !selectedMedico || !selectedHorarioId}
             style={{
-              marginTop: '20px',
-              backgroundColor: (!selectedEspecialidade || !selectedMedico || !selectedHorarioId) ? '#ccc' : '#4caf50',
-              color: '#fff',
-              padding: '10px 20px',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: (!selectedEspecialidade || !selectedMedico || !selectedHorarioId) ? 'not-allowed' : 'pointer'
+              ...styles.button,
+              ...styles.buttonSuccess,
+              marginTop: '30px',
+              opacity: (!selectedEspecialidade || !selectedMedico || !selectedHorarioId) ? 0.6 : 1
             }}
           >
             Marcar Consulta
           </button>
-          
         </form>
-
       );
     };
 
-    return (
-        renderizarSelectEspecialidade()
-    );
+    return renderizarSelectEspecialidade();
   };
 
-  //
   // PARTE LISTAGEM DE CONSULTAS
-  //
-
   const [statusDisponiveis, setStatusDisponiveis] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState("TODAS");
   const [consultas, setConsultas] = useState([]);
-
   const [consultaParaAtualizar, setConsultaParaAtualizar] = useState(null);
   const [horariosDisponiveisAtualizacao, setHorariosDisponiveisAtualizacao] = useState([]);
   const [dataSelecionadaAtualizacao, setDataSelecionadaAtualizacao] = useState(null);
   const [selectedHorarioIdAtualizacao, setSelectedHorarioIdAtualizacao] = useState(null);
-
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(0);
 
   useEffect(() => {
     fetchConsultas(selectedStatus, paginaAtual);
   }, [selectedStatus, paginaAtual]);
-  
 
-    // Buscar os status disponíveis
   useEffect(() => {
     const fetchStatusConsulta = async () => {
       try {
         const response = await api.get("/consulta/status");
-        console.log(response);
         setStatusDisponiveis(response.data || []);
       } catch (error) {
         console.error("Erro ao buscar status:", error);
@@ -282,50 +471,37 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     }
   }, [opcaoConsulta]);
 
-  // Buscar consultas com paginação e filtro
   const fetchConsultas = async (selectedStatus, page = 0) => {
     try {
       const response = await api.get(`/consulta/${selectedStatus}`, {
-        params: { page: page, size: 10 } // aqui você define o tamanho da página
+        params: { page: page, size: 10 }
       });
-  
-      console.log("Resposta da API:", response.data);
-  
       const consultasData = response.data.content || [];
       setConsultas(consultasData);
       setTotalPaginas(response.data.totalPages);
-      setPaginaAtual(response.data.number); // mantém sincronizado com a API
-  
+      setPaginaAtual(response.data.number);
     } catch (error) {
       console.error("Erro ao buscar consultas:", error);
       setConsultas([]);
     }
   };
-  
-
-  // Chamada inicial quando seleciona um status
-  useEffect(() => {
-    if (selectedStatus && opcaoConsulta === "ListarConsulta") {
-      fetchConsultas(selectedStatus);
-    }
-  }, [selectedStatus, opcaoConsulta]);
 
   const cancelarConsulta = async (id) => {
-    try {
-      await api.delete(`/consulta/cancelar/${id}`);
-      alert("Consulta cancelada com sucesso!");
-      fetchConsultas(selectedStatus); // Recarrega a lista
-    } catch (error) {
-      console.error("Erro ao cancelar consulta:", error);
-      alert("Erro ao cancelar consulta.");
+    if (window.confirm("Tem certeza que deseja cancelar esta consulta?")) {
+      try {
+        await api.delete(`/consulta/cancelar/${id}`);
+        alert("Consulta cancelada com sucesso!");
+        fetchConsultas(selectedStatus);
+      } catch (error) {
+        console.error("Erro ao cancelar consulta:", error);
+        alert("Erro ao cancelar consulta.");
+      }
     }
   };
 
   const abrirModalAtualizacao = async (consulta) => {
     setConsultaParaAtualizar(consulta);
-    
     try {
-      // Busca horários disponíveis para o médico da consulta
       const response = await api.get(`/medico/${consulta.dataDetalhesMedico.crm}/horarioDisponivel`);
       setHorariosDisponiveisAtualizacao(response.data.body || []);
     } catch (error) {
@@ -338,7 +514,6 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     if (!selectedHorarioIdAtualizacao || !consultaParaAtualizar) return;
   
     try {
-      // Encontra o horário selecionado
       const horarioSelecionado = horariosDisponiveisAtualizacao
         .find(h => h.id === selectedHorarioIdAtualizacao);
       
@@ -346,17 +521,13 @@ const Consulta = ({ setOpcaoSelecionada }) => {
         throw new Error("Horário selecionado não encontrado");
       }
   
-      // Prepara os dados para a API
       const dadosAtualizacao = {
         idConsulta: consultaParaAtualizar.id,
-        idHorario: selectedHorarioIdAtualizacao, // Envia o ID do horário, não a data
+        idHorario: selectedHorarioIdAtualizacao,
         novoHorarioConsulta: new Date(horarioSelecionado.horario).toISOString()
       };
   
-      console.log("Dados sendo enviados:", dadosAtualizacao);
-  
       await api.put(`/consulta/atualizar`, dadosAtualizacao);
-      
       alert("Consulta atualizada com sucesso!");
       setConsultaParaAtualizar(null);
       fetchConsultas(selectedStatus);
@@ -366,23 +537,36 @@ const Consulta = ({ setOpcaoSelecionada }) => {
     }
   };
 
-
-  // Processa as datas disponíveis para o DatePicker
   const datasDisponiveisAtualizacao = [
     ...new Set(horariosDisponiveisAtualizacao.map(h =>
       new Date(h.horario)
     ))
   ];
 
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'ABERTA': return { ...styles.statusIndicator, ...styles.statusOpen };
+      case 'CANCELADA': return { ...styles.statusIndicator, ...styles.statusCanceled };
+      case 'CONCLUIDA': return { ...styles.statusIndicator, ...styles.statusCompleted };
+      case 'NAO_COMPARECIDA': return { ...styles.statusIndicator, ...styles.statusNoShow };
+      default: return styles.statusIndicator;
+    }
+  };
+
   const ListarConsultas = () => {
     return (
-      <div>
-        <div style={{ marginBottom: '20px' }}>
-          <label>Filtrar por Status: </label>
+      <div style={styles.card}>
+        <h2 style={styles.title}>Minhas Consultas</h2>
+        
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Filtrar por Status:</label>
           <select
             value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            style={{ padding: '8px', borderRadius: '4px' }}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setPaginaAtual(0);
+            }}
+            style={styles.select}
           >
             <option value="TODAS">TODAS</option>
             {statusDisponiveis.map((status, index) => (
@@ -394,93 +578,79 @@ const Consulta = ({ setOpcaoSelecionada }) => {
         </div>
   
         {consultas.length > 0 ? (
-          <div>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={styles.table}>
               <thead>
-                <tr style={{ backgroundColor: '#f2f2f2' }}>
-                  <th style={{ padding: '10px', border: '1px solid #ddd' }}>Data</th>
-                  <th style={{ padding: '10px', border: '1px solid #ddd' }}>Horário</th>
-                  <th style={{ padding: '10px', border: '1px solid #ddd' }}>Médico</th>
-                  <th style={{ padding: '10px', border: '1px solid #ddd' }}>Status</th>
+                <tr>
+                  <th style={styles.tableHeader}>Data</th>
+                  <th style={styles.tableHeader}>Horário</th>
+                  <th style={styles.tableHeader}>Médico</th>
+                  <th style={styles.tableHeader}>Status</th>
+                  <th style={styles.tableHeader}>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {consultas.map((consulta) => (
-                  <tr key={consulta.id} style={{ borderBottom: '1px solid #ddd' }}>
-                    <td style={{ padding: '10px' }}>
+                  <tr key={consulta.id} style={styles.tableRow}>
+                    <td style={styles.tableCell}>
                       {new Date(consulta.data).toLocaleDateString('pt-BR')}
                     </td>
-                    <td style={{ padding: '10px' }}>
+                    <td style={styles.tableCell}>
                       {new Date(consulta.data).toLocaleTimeString('pt-BR', { 
                         hour: '2-digit', 
                         minute: '2-digit' 
                       })}
                     </td>
-                    <td style={{ padding: '10px' }}>
-                      {consulta.dataDetalhesMedico.dataDetalhesPessoa.nome} (CRM: {consulta.dataDetalhesMedico.crm})
+                    <td style={styles.tableCell}>
+                      {consulta.dataDetalhesMedico.dataDetalhesPessoa.nome} 
+                      <div style={{ color: '#7f8c8d', fontSize: '13px' }}>CRM: {consulta.dataDetalhesMedico.crm}</div>
                     </td>
-                    <td style={{ padding: '10px' }}>
-                      <span style={{ 
-                        color: consulta.statusConsula === 'CANCELADA' ? 'red' : 
-                               consulta.statusConsula === 'ABERTA' ? 'blue' : 
-                               consulta.statusConsula === 'NAO_COMPARECIDA' ? 'yellow' :
-                               consulta.statusConsula === 'CONCLUIDA' ? 'green' : 'inherit'
-                      }}>
+                    <td style={styles.tableCell}>
+                      <span style={getStatusStyle(consulta.statusConsula)}>
                         {consulta.statusConsula}
                       </span>
-                      
+                    </td>
+                    <td style={styles.tableCell}>
                       {consulta.statusConsula === 'ABERTA' && (
-                        <div style={{ marginTop: '8px' }}>
-                          {/* Alterado para abrirModalAtualizacao */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
                           <button 
-                            onClick={() => abrirModalAtualizacao(consulta)} 
-                            style={{ marginRight: '8px' }}
+                            onClick={() => abrirModalAtualizacao(consulta)}
+                            style={{ ...styles.button, padding: '6px 12px', fontSize: '13px' }}
                           >
                             Atualizar
                           </button>
-                          <button onClick={() => cancelarConsulta(consulta.id)}>
+                          <button 
+                            onClick={() => cancelarConsulta(consulta.id)}
+                            style={{ ...styles.button, ...styles.buttonDanger, padding: '6px 12px', fontSize: '13px' }}
+                          >
                             Cancelar
                           </button>
                         </div>
                       )}
                     </td>
-
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
-          
         ) : (
-          <p>Nenhuma consulta encontrada para o filtro selecionado.</p>
+          <p style={{ color: '#7f8c8d', textAlign: 'center', margin: '20px 0' }}>
+            Nenhuma consulta encontrada para o filtro selecionado.
+          </p>
         )}
 
-        {/* Modal de Atualização */}
         {consultaParaAtualizar && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              padding: '20px',
-              borderRadius: '8px',
-              width: '80%',
-              maxWidth: '600px'
-            }}>
-              <h3>Atualizar Consulta</h3>
-              <p>Médico: {consultaParaAtualizar.dataDetalhesMedico.dataDetalhesPessoa.nome}</p>
+          <div style={styles.modalOverlay}>
+            <div style={styles.modalContent}>
+              <h3 style={{ ...styles.title, borderBottom: 'none', marginBottom: '15px' }}>
+                Atualizar Consulta
+              </h3>
+              <p style={{ marginBottom: '20px' }}>
+                <strong>Médico:</strong> {consultaParaAtualizar.dataDetalhesMedico.dataDetalhesPessoa.nome}
+              </p>
               
-              <div style={{ marginTop: '20px' }}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Selecione uma nova data:</label>
                 <DatePicker
                   selected={dataSelecionadaAtualizacao}
                   onChange={(date) => {
@@ -490,52 +660,56 @@ const Consulta = ({ setOpcaoSelecionada }) => {
                   dateFormat="dd/MM/yyyy"
                   placeholderText="Selecione uma data"
                   includeDates={datasDisponiveisAtualizacao}
+                  style={styles.select}
                 />
               </div>
-  
+
               {dataSelecionadaAtualizacao && (
-                <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {horariosDisponiveisAtualizacao
-                    .filter(h => 
-                      new Date(h.horario).toLocaleDateString('pt-BR') === 
-                      dataSelecionadaAtualizacao.toLocaleDateString('pt-BR')
-                    )
-                    .map(horario => {
-                      const hora = new Date(horario.horario).toLocaleTimeString('pt-BR', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      });
-  
-                      return (
-                        <div
-                          key={horario.id}
-                          onClick={() => setSelectedHorarioIdAtualizacao(horario.id)}
-                          style={{
-                            border: '1px solid',
-                            borderColor: selectedHorarioIdAtualizacao === horario.id ? '#4CAF50' : '#ddd',
-                            borderRadius: '4px',
-                            padding: '8px',
-                            cursor: 'pointer',
-                            backgroundColor: selectedHorarioIdAtualizacao === horario.id ? '#e8f5e9' : 'white'
-                          }}
-                        >
-                          {hora}
-                        </div>
-                      );
-                    })}
+                <div style={{ marginTop: '15px' }}>
+                  <label style={styles.label}>Horários disponíveis:</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
+                    {horariosDisponiveisAtualizacao
+                      .filter(h => 
+                        new Date(h.horario).toLocaleDateString('pt-BR') === 
+                        dataSelecionadaAtualizacao.toLocaleDateString('pt-BR')
+                      )
+                      .map(horario => {
+                        const hora = new Date(horario.horario).toLocaleTimeString('pt-BR', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+
+                        return (
+                          <div
+                            key={horario.id}
+                            onClick={() => setSelectedHorarioIdAtualizacao(horario.id)}
+                            style={{
+                              ...styles.timeSlot,
+                              ...(selectedHorarioIdAtualizacao === horario.id ? styles.timeSlotSelected : {})
+                            }}
+                          >
+                            {hora}
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
-  
-              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button onClick={() => setConsultaParaAtualizar(null)}>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '25px' }}>
+                <button 
+                  onClick={() => setConsultaParaAtualizar(null)}
+                  style={{ ...styles.button, backgroundColor: '#95a5a6' }}
+                >
                   Cancelar
                 </button>
                 <button 
                   onClick={atualizarConsultaConfirmada}
                   disabled={!selectedHorarioIdAtualizacao}
                   style={{
-                    backgroundColor: !selectedHorarioIdAtualizacao ? '#ccc' : '#4CAF50',
-                    color: 'white'
+                    ...styles.button,
+                    ...styles.buttonSuccess,
+                    opacity: !selectedHorarioIdAtualizacao ? 0.6 : 1
                   }}
                 >
                   Confirmar Atualização
@@ -545,28 +719,29 @@ const Consulta = ({ setOpcaoSelecionada }) => {
           </div>
         )}
 
-        {/* Botoes pajinacao */}
+        {totalPaginas > 1 && (
+          <div style={styles.pagination}>
+            <button 
+              onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 0))}
+              disabled={paginaAtual === 0}
+              style={styles.button}
+            >
+              Anterior
+            </button>
 
-        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-          <button 
-            onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 0))}
-            disabled={paginaAtual === 0}
-          >
-            Anterior
-          </button>
+            <span style={{ color: '#7f8c8d' }}>
+              Página {paginaAtual + 1} de {totalPaginas}
+            </span>
 
-          <span>Página {paginaAtual + 1} de {totalPaginas}</span>
-
-          <button 
-            onClick={() => setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas - 1))}
-            disabled={paginaAtual + 1 >= totalPaginas}
-          >
-            Próximo
-          </button>
-        </div>
-
-
-
+            <button 
+              onClick={() => setPaginaAtual((prev) => Math.min(prev + 1, totalPaginas - 1))}
+              disabled={paginaAtual + 1 >= totalPaginas}
+              style={styles.button}
+            >
+              Próximo
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -578,66 +753,96 @@ const Consulta = ({ setOpcaoSelecionada }) => {
       case "ListarConsulta":
         return <ListarConsultas />;
       default:
-        return <p>Selecione uma opção no menu para gerenciar suas consultas.</p>;
+        return (
+          <div style={styles.card}>
+            <h2 style={styles.title}>Área de Consultas</h2>
+            <p style={{ color: '#7f8c8d' }}>
+              Selecione uma opção no menu para gerenciar suas consultas.
+            </p>
+          </div>
+        );
     }
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-      {/* Botoes no topo */}
-      <nav style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-        <button onClick={() => setOpcaoConsulta("MarcaConsulta")}>Marcar Consulta</button>
-        <button onClick={() => setOpcaoConsulta("ListarConsulta")}>Listar Consultas</button>
-        <button onClick={() => setOpcaoSelecionada("Dashboard")}>Voltar</button>
+      <nav style={{ 
+        display: "flex", 
+        gap: "15px", 
+        marginBottom: "20px",
+        padding: "15px",
+        backgroundColor: "white",
+        borderRadius: "8px",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
+      }}>
+        <button 
+          onClick={() => setOpcaoConsulta("MarcaConsulta")}
+          style={{
+            ...styles.button,
+            backgroundColor: opcaoConsulta === "MarcaConsulta" ? "#2980b9" : "#3498db"
+          }}
+        >
+          Marcar Consulta
+        </button>
+        <button 
+          onClick={() => setOpcaoConsulta("ListarConsulta")}
+          style={{
+            ...styles.button,
+            backgroundColor: opcaoConsulta === "ListarConsulta" ? "#2980b9" : "#3498db"
+          }}
+        >
+          Listar Consultas
+        </button>
+        <button 
+          onClick={() => setOpcaoSelecionada("Dashboard")}
+          style={{
+            ...styles.button,
+            backgroundColor: "#95a5a6"
+          }}
+        >
+          Voltar
+        </button>
       </nav>
 
-      {/* Conteudo dinamico da consulta */}
-      <div style={{ padding: "20px", border: "1px solid #ccc", borderRadius: "8px" }}>
-        <h2>Área de Consultas</h2>
-        {renderizarConteudoConsulta()}
-      </div>
+      {renderizarConteudoConsulta()}
     </div>
   );
 };
 
 const AtualizarDados = () => (
-  <div>
-    <h2>Atualizar Dados</h2>
-    <p>Opção para atualizar os seus dados.</p>
+  <div style={styles.card}>
+    <h2 style={styles.title}>Atualizar Dados</h2>
+    <p style={{ color: '#7f8c8d' }}>Formulário para atualização de dados pessoais.</p>
+    {/* Adicione aqui o formulário de atualização de dados */}
   </div>
 );
 
 const CreditarSaldo = () => (
-  <div>
-    <h2>Creditar Saldo</h2>
-    <p>Opção para adicionar saldo na conta.</p>
+  <div style={styles.card}>
+    <h2 style={styles.title}>Creditar Saldo</h2>
+    <p style={{ color: '#7f8c8d' }}>Formulário para adicionar saldo à conta.</p>
+    {/* Adicione aqui o formulário de crédito de saldo */}
   </div>
 );
 
 const HistoricoDoencas = () => (
-  <div>
-    <h2>Histórico de Doenças</h2>
-    <p>Lista de doenças registradas no sistema.</p>
+  <div style={styles.card}>
+    <h2 style={styles.title}>Histórico de Doenças</h2>
+    <p style={{ color: '#7f8c8d' }}>Lista de doenças registradas no sistema.</p>
+    {/* Adicione aqui a lista de histórico de doenças */}
   </div>
 );
 
 const HistoricoTransacoes = () => (
-  <div>
-    <h2>Histórico de Transações</h2>
-    <p>Todas as transações realizadas.</p>
-  </div>
-);
-
-const PadraoInicio = () => (
-  <div>
-    <h2>Opções</h2>
-    <p>Escolha uma das opções ao lado.</p>
+  <div style={styles.card}>
+    <h2 style={styles.title}>Histórico de Transações</h2>
+    <p style={{ color: '#7f8c8d' }}>Todas as transações financeiras realizadas.</p>
+    {/* Adicione aqui a lista de transações */}
   </div>
 );
 
 const DashboardPaciente = () => {
-
-  const [opcaoSelecionada, setOpcaoSelecionada] = useState("AtualizarDados");
+  const [opcaoSelecionada, setOpcaoSelecionada] = useState("Consulta");
 
   const renderizarConteudo = () => {
     switch (opcaoSelecionada) {
@@ -652,25 +857,75 @@ const DashboardPaciente = () => {
       case "HistoricoTransacoes":
         return <HistoricoTransacoes />;
       default:
-        return <PadraoInicio />;
+        return (
+          <div style={styles.card}>
+            <h2 style={styles.title}>Bem-vindo ao Painel do Paciente</h2>
+            <p style={{ color: '#7f8c8d' }}>Selecione uma das opções no menu ao lado para começar.</p>
+          </div>
+        );
     }
   };
 
   return (
-    <div style={{ display: "flex" }}>
+    <div style={styles.container}>
       {/* Menu lateral */}
-      <nav style={{ width: "200px", borderRight: "1px solid #ccc", padding: "10px" }}>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          <li><button onClick={() => setOpcaoSelecionada("Consulta")}>Consulta</button></li>
-          <li><button onClick={() => setOpcaoSelecionada("AtualizarDados")}>Atualizar Dados</button></li>
-          <li><button onClick={() => setOpcaoSelecionada("CreditarSaldo")}>Creditar Saldo</button></li>
-          <li><button onClick={() => setOpcaoSelecionada("HistoricoDoencas")}>Histórico de Doenças</button></li>
-          <li><button onClick={() => setOpcaoSelecionada("HistoricoTransacoes")}>Histórico de Transações</button></li>
+      <nav style={styles.sidebar}>
+        <ul style={styles.sidebarList}>
+          <li 
+            style={{
+              ...styles.sidebarItem,
+              ...(opcaoSelecionada === "Consulta" ? styles.sidebarItemHover : {})
+            }}
+            onClick={() => setOpcaoSelecionada("Consulta")}
+          >
+            <span style={styles.sidebarIcon}>📅</span>
+            Consultas
+          </li>
+          <li 
+            style={{
+              ...styles.sidebarItem,
+              ...(opcaoSelecionada === "AtualizarDados" ? styles.sidebarItemHover : {})
+            }}
+            onClick={() => setOpcaoSelecionada("AtualizarDados")}
+          >
+            <span style={styles.sidebarIcon}>✏️</span>
+            Atualizar Dados
+          </li>
+          <li 
+            style={{
+              ...styles.sidebarItem,
+              ...(opcaoSelecionada === "CreditarSaldo" ? styles.sidebarItemHover : {})
+            }}
+            onClick={() => setOpcaoSelecionada("CreditarSaldo")}
+          >
+            <span style={styles.sidebarIcon}>💵</span>
+            Creditar Saldo
+          </li>
+          <li 
+            style={{
+              ...styles.sidebarItem,
+              ...(opcaoSelecionada === "HistoricoDoencas" ? styles.sidebarItemHover : {})
+            }}
+            onClick={() => setOpcaoSelecionada("HistoricoDoencas")}
+          >
+            <span style={styles.sidebarIcon}>🏥</span>
+            Histórico de Doenças
+          </li>
+          <li 
+            style={{
+              ...styles.sidebarItem,
+              ...(opcaoSelecionada === "HistoricoTransacoes" ? styles.sidebarItemHover : {})
+            }}
+            onClick={() => setOpcaoSelecionada("HistoricoTransacoes")}
+          >
+            <span style={styles.sidebarIcon}>📊</span>
+            Histórico Financeiro
+          </li>
         </ul>
       </nav>
 
       {/* Conteúdo dinâmico */}
-      <div style={{ padding: "20px", flex: 1 }}>
+      <div style={styles.content}>
         {renderizarConteudo()}
       </div>
     </div>
