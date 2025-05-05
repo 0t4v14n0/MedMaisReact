@@ -4,226 +4,8 @@ import api from "../api/api";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Estilos globais
-const styles = {
-  container: {
-    display: "flex",
-    minHeight: "100vh",
-    backgroundColor: "#f5f7fa",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-  },
-  sidebar: {
-    width: "250px",
-    backgroundColor: "#2c3e50",
-    color: "#ecf0f1",
-    padding: "20px 0",
-    boxShadow: "2px 0 5px rgba(0,0,0,0.1)"
-  },
-  sidebarList: {
-    listStyle: "none",
-    padding: 0,
-    margin: 0
-  },
-  sidebarItem: {
-    padding: "12px 20px",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    display: "flex",
-    alignItems: "center",
-    borderLeft: "4px solid transparent"
-  },
-  sidebarItemHover: {
-    backgroundColor: "#34495e",
-    borderLeft: "4px solid #3498db"
-  },
-  sidebarIcon: {
-    marginRight: "10px",
-    fontSize: "18px"
-  },
-  content: {
-    flex: 1,
-    padding: "30px",
-    backgroundColor: "#f5f7fa"
-  },
-  card: {
-    backgroundColor: "white",
-    borderRadius: "8px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
-    padding: "25px",
-    marginBottom: "30px"
-  },
-  title: {
-    color: "#2c3e50",
-    marginBottom: "20px",
-    fontSize: "24px",
-    fontWeight: "600",
-    borderBottom: "1px solid #eee",
-    paddingBottom: "10px"
-  },
-  button: {
-    backgroundColor: "#3498db",
-    color: "white",
-    border: "none",
-    padding: "10px 20px",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: "500",
-    transition: "all 0.3s ease",
-    marginRight: "10px",
-    marginBottom: "10px",
-    '&:hover': {
-      backgroundColor: "#2980b9"
-    },
-    '&:disabled': {
-      backgroundColor: "#bdc3c7",
-      cursor: "not-allowed"
-    }
-  },
-  buttonDanger: {
-    backgroundColor: "#e74c3c",
-    '&:hover': {
-      backgroundColor: "#c0392b"
-    }
-  },
-  buttonSuccess: {
-    backgroundColor: "#2ecc71",
-    '&:hover': {
-      backgroundColor: "#27ae60"
-    }
-  },
-  formGroup: {
-    marginBottom: "20px"
-  },
-  label: {
-    display: "block",
-    marginBottom: "8px",
-    fontWeight: "500",
-    color: "#34495e"
-  },
-  select: {
-    width: "100%",
-    padding: "10px",
-    borderRadius: "4px",
-    border: "1px solid #ddd",
-    fontSize: "14px",
-    transition: "all 0.3s ease",
-    '&:focus': {
-      borderColor: "#3498db",
-      outline: "none",
-      boxShadow: "0 0 0 2px rgba(52,152,219,0.2)"
-    }
-  },
-  doctorCard: {
-    border: "1px solid #e0e0e0",
-    borderRadius: "8px",
-    padding: "15px",
-    marginBottom: "15px",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    '&:hover': {
-      borderColor: "#3498db",
-      boxShadow: "0 2px 8px rgba(52,152,219,0.1)"
-    }
-  },
-  doctorCardSelected: {
-    borderColor: "#3498db",
-    backgroundColor: "#e8f4fc"
-  },
-  timeSlot: {
-    display: "inline-block",
-    border: "1px solid #ddd",
-    borderRadius: "4px",
-    padding: "8px 15px",
-    margin: "5px",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    '&:hover': {
-      borderColor: "#3498db",
-      backgroundColor: "#f0f7fd"
-    }
-  },
-  timeSlotSelected: {
-    borderColor: "#3498db",
-    backgroundColor: "#3498db",
-    color: "white"
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    marginTop: "20px"
-  },
-  tableHeader: {
-    backgroundColor: "#2c3e50",
-    color: "white",
-    textAlign: "left",
-    padding: "12px"
-  },
-  tableRow: {
-    borderBottom: "1px solid #eee",
-    '&:nth-child(even)': {
-      backgroundColor: "#f9f9f9"
-    },
-    '&:hover': {
-      backgroundColor: "#f5f5f5"
-    }
-  },
-  tableCell: {
-    padding: "12px"
-  },
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000
-  },
-  modalContent: {
-    backgroundColor: "white",
-    padding: "25px",
-    borderRadius: "8px",
-    width: "80%",
-    maxWidth: "600px",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.15)"
-  },
-  pagination: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: "20px",
-    gap: "10px"
-  },
-  statusIndicator: {
-    display: "inline-block",
-    padding: "4px 8px",
-    borderRadius: "4px",
-    fontWeight: "500",
-    fontSize: "12px"
-  },
-  statusOpen: {
-    backgroundColor: "#d4edff",
-    color: "#004085"
-  },
-  statusCanceled: {
-    backgroundColor: "#f8d7da",
-    color: "#721c24"
-  },
-  statusCompleted: {
-    backgroundColor: "#d4edda",
-    color: "#155724"
-  },
-  statusNoShow: {
-    backgroundColor: "#fff3cd",
-    color: "#856404"
-  }
-};
+const Consulta = () => {
 
-const Consulta = ({ setOpcaoSelecionada }) => {
   const [opcaoConsulta, setOpcaoConsulta] = useState("");
   const [especialidades, setEspecialidades] = useState([]);
   const [selectedEspecialidade, setSelectedEspecialidade] = useState("");
@@ -232,7 +14,11 @@ const Consulta = ({ setOpcaoSelecionada }) => {
   const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
   const [dataSelecionada, setDataSelecionada] = useState(null);
   const [selectedHorarioId, setSelectedHorarioId] = useState(null);
-  
+
+  const horariosFiltrados = horariosDisponiveis.filter(h =>
+    new Date(h.horario).toLocaleDateString('pt-BR') ===
+    (dataSelecionada ? dataSelecionada.toLocaleDateString('pt-BR') : '')
+  );
   
   const datasStrings = horariosDisponiveis.map(h => {
     return new Date(h.horario).toLocaleDateString('pt-BR');
@@ -833,13 +619,206 @@ const HistoricoDoencas = () => (
   </div>
 );
 
-const HistoricoTransacoes = () => (
-  <div style={styles.card}>
-    <h2 style={styles.title}>Histórico de Transações</h2>
-    <p style={{ color: '#7f8c8d' }}>Todas as transações financeiras realizadas.</p>
-    {/* Adicione aqui a lista de transações */}
-  </div>
-);
+const HistoricoTransacoes = () => {
+  
+  const [statusDisponiveis, setStatusDisponiveis] = useState([]);
+  const [selectedStatus, setSelectedStatus] = useState("TODAS");
+  const [transacoes, setTransacoes] = useState([]);
+  const [paginaAtual, setPaginaAtual] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(0);
+  const [carregando, setCarregando] = useState(false);
+
+    const getStatusStyle = (status) => {
+    const baseStyle = {
+      padding: '4px 8px',
+      borderRadius: '4px',
+      fontSize: '12px',
+      fontWeight: '500',
+      display: 'inline-block'
+    };
+
+    switch(status) {
+      case 'CONCLUIDA':
+        return { ...baseStyle, backgroundColor: '#d4edda', color: '#155724' };
+      case 'PENDENTE':
+        return { ...baseStyle, backgroundColor: '#fff3cd', color: '#856404' };
+      case 'CANCELADA':
+        return { ...baseStyle, backgroundColor: '#f8d7da', color: '#721c24' };
+      case 'ESTORNADA':
+        return { ...baseStyle, backgroundColor: '#e2e3e5', color: '#383d41' };
+      default:
+        return baseStyle;
+    }
+  };
+
+  // Busca os status disponíveis ao montar o componente
+  useEffect(() => {
+    const fetchStatusHistoricoTransacoes = async () => {
+      try {
+        const response = await api.get("/historicotransacoes/status");
+        if (Array.isArray(response.data)) {
+          setStatusDisponiveis(response.data);
+        } else {
+          setStatusDisponiveis([]);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar status das transações:", error);
+      }
+    };
+
+    fetchStatusHistoricoTransacoes();
+  }, []);
+
+  // Busca as transações quando o status ou página muda
+  useEffect(() => {
+    fetchTransacoes(selectedStatus, paginaAtual);
+  }, [selectedStatus, paginaAtual]);
+
+  const fetchTransacoes = async (status, page = 0) => {
+    try {
+      const endpoint = `/historicotransacoes/${status}`;
+      const { data } = await api.get(endpoint, { params: { page, size: 10 } });
+      setTransacoes(data.content);
+      setTotalPaginas(data.totalPages);
+    } catch {
+      setTransacoes([]);
+    }
+  };
+
+  const formatarData = (dataString) => {
+    const data = new Date(dataString);
+    return data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR');
+  };
+
+  const formatarValor = (valor) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(valor);
+  };
+
+  return (
+    <div style={styles.card}>
+      <h2 style={styles.title}>Histórico de Transações</h2>
+
+      <div style={styles.formGroup}>
+        <label style={styles.label}>Filtrar por Status:</label>
+        <select
+          value={selectedStatus}
+          onChange={(e) => {
+            setSelectedStatus(e.target.value);
+            setPaginaAtual(0);
+          }}
+          style={styles.select}
+        >
+          <option value="TODAS">TODAS</option>
+          {statusDisponiveis.map((status, index) => (
+            <option key={index} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {carregando ? (
+        <p style={{ textAlign: 'center', color: '#7f8c8d' }}>Carregando transações...</p>
+      ) : transacoes.length > 0 ? (
+        <div style={{ overflowX: 'auto', marginTop: '20px' }}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.tableHeader}>Data</th>
+              <th style={styles.tableHeader}>Valor</th>
+              <th style={styles.tableHeader}>Médico</th>
+              <th style={styles.tableHeader}>Especialidade</th>
+              <th style={styles.tableHeader}>Paciente</th>
+              <th style={styles.tableHeader}>Status</th>
+              <th style={styles.tableHeader}>Remetente</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transacoes.map((transacao) => {
+              // Determina o nome do remetente
+              const remetenteNome = transacao.remetente === transacao.dataDetalhesPaciente.dataDetalhesPessoa.id 
+                ? transacao.dataDetalhesPaciente.dataDetalhesPessoa.nome 
+                : transacao.dataDetalhesMedico.dataDetalhesPessoa.nome;
+              
+              return (
+                <tr key={transacao.id} style={styles.tableRow}>
+                  <td style={styles.tableCell}>
+                    {formatarData(transacao.dataTransacao)}
+                  </td>
+                  <td style={{
+                    ...styles.tableCell,
+                    color: transacao.valor >= 0 ? '#27ae60' : '#e74c3c',
+                    fontWeight: '500'
+                  }}>
+                    {formatarValor(transacao.valor)}
+                  </td>
+                  <td style={styles.tableCell}>
+                    {transacao.dataDetalhesMedico.dataDetalhesPessoa.nome}
+                    <div style={{ fontSize: '0.8em', color: '#7f8c8d' }}>
+                      CRM: {transacao.dataDetalhesMedico.crm}
+                    </div>
+                  </td>
+                  <td style={styles.tableCell}>
+                    {transacao.dataDetalhesMedico.especialidadeMedica}
+                  </td>
+                  <td style={styles.tableCell}>
+                    {transacao.dataDetalhesPaciente.dataDetalhesPessoa.nome}
+                    <div style={{ fontSize: '0.8em', color: '#7f8c8d' }}>
+                      Carteira: {transacao.dataDetalhesPaciente.numeroCarteiraPlano}
+                    </div>
+                  </td>
+                  <td style={styles.tableCell}>
+                    <span style={getStatusStyle(transacao.status)}>
+                      {transacao.status}
+                    </span>
+                  </td>
+                  <td style={styles.tableCell}>
+                    {remetenteNome}
+                    <div style={{ fontSize: '0.8em', color: '#7f8c8d' }}>
+                      (ID: {transacao.remetente})
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      ) : (
+        <p style={{ textAlign: 'center', color: '#7f8c8d', marginTop: '20px' }}>
+          Nenhuma transação encontrada para o filtro selecionado.
+        </p>
+      )}
+
+      {totalPaginas > 1 && (
+        <div style={styles.pagination}>
+          <button 
+            onClick={() => setPaginaAtual(p => Math.max(p - 1, 0))}
+            disabled={paginaAtual === 0}
+            style={styles.button}
+          >
+            Anterior
+          </button>
+          
+          <span style={{ color: '#7f8c8d' }}>
+            Página {paginaAtual + 1} de {totalPaginas}
+          </span>
+          
+          <button 
+            onClick={() => setPaginaAtual(p => Math.min(p + 1, totalPaginas - 1))}
+            disabled={paginaAtual >= totalPaginas - 1}
+            style={styles.button}
+          >
+            Próxima
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const DashboardPaciente = () => {
   const [opcaoSelecionada, setOpcaoSelecionada] = useState("Consulta");
@@ -851,7 +830,7 @@ const DashboardPaciente = () => {
       case "CreditarSaldo":
         return <CreditarSaldo />;
       case "Consulta":
-        return <Consulta setOpcaoSelecionada={setOpcaoSelecionada} />;
+        return <Consulta />;
       case "HistoricoDoencas":
         return <HistoricoDoencas />;
       case "HistoricoTransacoes":
@@ -930,6 +909,225 @@ const DashboardPaciente = () => {
       </div>
     </div>
   );
+};
+
+// Estilos globais
+const styles = {
+  container: {
+    display: "flex",
+    minHeight: "100vh",
+    backgroundColor: "#f5f7fa",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+  },
+  sidebar: {
+    width: "250px",
+    backgroundColor: "#2c3e50",
+    color: "#ecf0f1",
+    padding: "20px 0",
+    boxShadow: "2px 0 5px rgba(0,0,0,0.1)"
+  },
+  sidebarList: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0
+  },
+  sidebarItem: {
+    padding: "12px 20px",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    display: "flex",
+    alignItems: "center",
+    borderLeft: "4px solid transparent"
+  },
+  sidebarItemHover: {
+    backgroundColor: "#34495e",
+    borderLeft: "4px solid #3498db"
+  },
+  sidebarIcon: {
+    marginRight: "10px",
+    fontSize: "18px"
+  },
+  content: {
+    flex: 1,
+    padding: "30px",
+    backgroundColor: "#f5f7fa"
+  },
+  card: {
+    backgroundColor: "white",
+    borderRadius: "8px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+    padding: "25px",
+    marginBottom: "30px"
+  },
+  title: {
+    color: "#2c3e50",
+    marginBottom: "20px",
+    fontSize: "24px",
+    fontWeight: "600",
+    borderBottom: "1px solid #eee",
+    paddingBottom: "10px"
+  },
+  button: {
+    backgroundColor: "#3498db",
+    color: "white",
+    border: "none",
+    padding: "10px 20px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "500",
+    transition: "all 0.3s ease",
+    marginRight: "10px",
+    marginBottom: "10px",
+    '&:hover': {
+      backgroundColor: "#2980b9"
+    },
+    '&:disabled': {
+      backgroundColor: "#bdc3c7",
+      cursor: "not-allowed"
+    }
+  },
+  buttonDanger: {
+    backgroundColor: "#e74c3c",
+    '&:hover': {
+      backgroundColor: "#c0392b"
+    }
+  },
+  buttonSuccess: {
+    backgroundColor: "#2ecc71",
+    '&:hover': {
+      backgroundColor: "#27ae60"
+    }
+  },
+  formGroup: {
+    marginBottom: "20px"
+  },
+  label: {
+    display: "block",
+    marginBottom: "8px",
+    fontWeight: "500",
+    color: "#34495e"
+  },
+  select: {
+    width: "100%",
+    padding: "10px",
+    borderRadius: "4px",
+    border: "1px solid #ddd",
+    fontSize: "14px",
+    transition: "all 0.3s ease",
+    '&:focus': {
+      borderColor: "#3498db",
+      outline: "none",
+      boxShadow: "0 0 0 2px rgba(52,152,219,0.2)"
+    }
+  },
+  doctorCard: {
+    border: "1px solid #e0e0e0",
+    borderRadius: "8px",
+    padding: "15px",
+    marginBottom: "15px",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    '&:hover': {
+      borderColor: "#3498db",
+      boxShadow: "0 2px 8px rgba(52,152,219,0.1)"
+    }
+  },
+  doctorCardSelected: {
+    borderColor: "#3498db",
+    backgroundColor: "#e8f4fc"
+  },
+  timeSlot: {
+    display: "inline-block",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    padding: "8px 15px",
+    margin: "5px",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    '&:hover': {
+      borderColor: "#3498db",
+      backgroundColor: "#f0f7fd"
+    }
+  },
+  timeSlotSelected: {
+    borderColor: "#3498db",
+    backgroundColor: "#3498db",
+    color: "white"
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    marginTop: "20px"
+  },
+  tableHeader: {
+    backgroundColor: "#2c3e50",
+    color: "white",
+    textAlign: "left",
+    padding: "12px"
+  },
+  tableRow: {
+    borderBottom: "1px solid #eee",
+    '&:nth-child(even)': {
+      backgroundColor: "#f9f9f9"
+    },
+    '&:hover': {
+      backgroundColor: "#f5f5f5"
+    }
+  },
+  tableCell: {
+    padding: "12px"
+  },
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: "25px",
+    borderRadius: "8px",
+    width: "80%",
+    maxWidth: "600px",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.15)"
+  },
+  pagination: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: "20px",
+    gap: "10px"
+  },
+  statusIndicator: {
+    display: "inline-block",
+    padding: "4px 8px",
+    borderRadius: "4px",
+    fontWeight: "500",
+    fontSize: "12px"
+  },
+  statusOpen: {
+    backgroundColor: "#d4edff",
+    color: "#004085"
+  },
+  statusCanceled: {
+    backgroundColor: "#f8d7da",
+    color: "#721c24"
+  },
+  statusCompleted: {
+    backgroundColor: "#d4edda",
+    color: "#155724"
+  },
+  statusNoShow: {
+    backgroundColor: "#fff3cd",
+    color: "#856404"
+  }
 };
 
 export default DashboardPaciente;
