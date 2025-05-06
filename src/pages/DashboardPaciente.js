@@ -626,7 +626,6 @@ const HistoricoTransacoes = () => {
   const [transacoes, setTransacoes] = useState([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(0);
-  const [carregando, setCarregando] = useState(false);
 
     const getStatusStyle = (status) => {
     const baseStyle = {

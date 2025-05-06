@@ -4,9 +4,9 @@ import { AuthProvider } from "./auth/AuthContext"; // Importe o AuthProvider
 import PrivateRoute from "./auth/PrivateRoute";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
-import About from "./pages/About";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
+import Recuperarsenha from "./pages/recuperarsenha";
 import DashboardMedico from "./pages/DashboardMedico";
 import DashboardPaciente from "./pages/DashboardPaciente";
 import DashboardAdmin from "./pages/DashboardAdmin";
@@ -21,7 +21,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />
-          <Route path="/about" element={<About />} />
+          <Route path="/recuperar-senha" element={<Recuperarsenha />} />
+          <Route path="/recuperar-senha/:token" element={<Recuperarsenha />} />
 
           {/* Rota do médico */}
           <Route element={<PrivateRoute allowedRoles={["MEDICO"]} />}>
