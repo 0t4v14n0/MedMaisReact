@@ -10,6 +10,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,6 +51,7 @@ function Login() {
         } else {
           setError(message || 'Ocorreu um erro inesperado.');
         }
+        setTimeout(() => setError(''), 3000);
       } else {
         setError("Erro de conexão com o servidor.");
       }

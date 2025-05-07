@@ -23,15 +23,16 @@ const Recuperarsenha = () => {
     e.preventDefault();
     setErro('');
     
-    if (!email) {
-      setErro('Por favor, informe seu e-mail');
+    if (!emailOuLogin) {
+      setErro('Por favor, informe seu e-mail ou login');
       return;
     }
-
+  
     try {
-      await api.post('/auth/senha/recuperar/enviar', { email });
-      setMensagem('Um e-mail com instruções foi enviado para o endereço fornecido.');
-      setEmail('');
+      await api.post(`/auth/senha/recuperar/enviar?emailOuLogin=${encodeURIComponent(emailOuLogin)}`);
+      setMensagem('Um e-mail com instruções foi enviado caso o cadastro exista.');
+      setEmailOuLogin('');
+      setTimeout(() => navigate('/login'), 3000);
     } catch (error) {
       setErro(error.response?.data?.message || 'Erro ao solicitar recuperação de senha');
     }
@@ -52,7 +53,13 @@ const Recuperarsenha = () => {
     }
 
     try {
-      await api.post(`/auth/senha/recuperar/${token}`, { novaSenha });
+      await api.post(`/auth/senha/recuperar/${token}`, { 
+        senha: novaSenha
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       setMensagem('Senha redefinida com sucesso! Redirecionando para login...');
       setTimeout(() => navigate('/login'), 3000);
     } catch (error) {
