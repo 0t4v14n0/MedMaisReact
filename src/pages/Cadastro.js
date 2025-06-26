@@ -18,6 +18,7 @@ export default function Registro() {
       cpf: '',
       email: '',
       telefone: '',
+      sexo: '',
       dataNascimento: '',
       dataRegistroEndereco: {
         endereco: '',
@@ -36,7 +37,7 @@ export default function Registro() {
   const handleChange = (e) => {
     const { name, value } = e.target;
   
-    if (['login', 'senha', 'nome', 'cpf', 'email', 'telefone', 'dataNascimento'].includes(name)) {
+    if (['login', 'senha', 'nome', 'cpf', 'email', 'telefone', 'sexo', 'dataNascimento'].includes(name)) {
       setFormData((prev) => ({
         ...prev,
         dataRegistroPessoa: {
@@ -106,6 +107,14 @@ export default function Registro() {
             </div>
             <div className="form-group">
               <input name="telefone" placeholder="Telefone" onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <select name="sexo" onChange={handleChange} required>
+                <option value="">Selecione o seu sexo</option>
+                <option value="MASCULINO">MASCULINO</option>
+                <option value="FEMININO">FEMININO</option>
+                <option value="OUTRO">OUTRO</option>
+              </select>
             </div>
             <div className="form-group">
               <label>Data de Nascimento</label>

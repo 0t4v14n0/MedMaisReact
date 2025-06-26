@@ -27,14 +27,13 @@ function Login() {
         authLogin(token, roles);
 
         const role = roles[0];
-        if (role === 'PACIENTE') {
-          navigate('/paciente/dashboard');
-        } else if (role === 'MEDICO') {
-          navigate('/medico/dashboard');
-        } else if (role === 'ADMIN') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/');
+        console.log(role);
+        if (role.includes("ADMIN")) {
+          navigate("/admin/dashboard");
+        } else if (role.includes("MEDICO")) {
+          navigate("/medico/dashboard");
+        } else if (role.includes("PACIENTE")) {
+          navigate("/paciente/dashboard");
         }
       } else {
         setError('Credenciais inválidas.');
@@ -135,11 +134,11 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: '100vh',
-    backgroundColor: '#f5f7fa',
+    backgroundColor: '#E5FFFD',
     padding: '20px'
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgb(0, 199, 180)',
     borderRadius: '12px',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
     padding: '40px',
@@ -193,7 +192,7 @@ const styles = {
   button: {
     width: '100%',
     padding: '14px',
-    backgroundColor: '#4299e1',
+    backgroundColor: 'rgb(35, 57, 117)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
@@ -243,7 +242,7 @@ const styles = {
     gap: '10px'
   },
   link: {
-    color: '#4299e1',
+    color: 'rgb(35, 57, 117)',
     textDecoration: 'none',
     fontWeight: '500',
     ':hover': {

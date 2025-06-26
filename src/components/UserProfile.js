@@ -4,15 +4,19 @@ import api from '../api/api';
 import { useAuth } from "../auth/AuthContext";
 
 const UserProfile = () => {
-  const { user, logout } = useAuth();
+  const { user, roles, logout } = useAuth();
   const navigate = useNavigate();
   const [pessoaData, setPessoaData] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Verifica se o usuário tem algum role (pega o primeiro role como principal)
+  const userRole = roles.length > 0 ? roles[0] : null;
+
   useEffect(() => {
-    const fetchPessoaData = async () => {
-      if (user?.token) {
-        setLoading(true);
+    // Só faz fetch se for usuário válido, tiver token e não for ADMIN
+    if (user?.token && userRole && userRole !== 'ADMIN') {
+      setLoading(true);
+      const fetchPessoaData = async () => {
         try {
           const response = await api.get('/pessoa/dados', {
             headers: {
@@ -20,19 +24,125 @@ const UserProfile = () => {
             }
           });
           setPessoaData(response.data);
-          console.log(pessoaData.saldo);
         } catch (error) {
           console.error("Erro ao buscar dados da pessoa:", error);
         } finally {
           setLoading(false);
         }
-      }
-    };
+      };
+      
+      fetchPessoaData();
+    }
+  }, [user, userRole]);
 
-    fetchPessoaData();
-  }, [user]);
+  const handleLogout = () => {
+    // Reset local state before logout
+    setPessoaData(null);
+    setLoading(false);
+    
+    // Perform logout
+    logout();
+    
+    // Redirect
+    navigate('/');
+  };
 
-  if (!user) return null;
+  if (!user || !userRole) return null;
+
+  const renderProfileContent = () => {
+    switch(userRole) {
+      case 'ADMIN':
+        return (
+          <div style={{ textAlign: "right" }}>
+            <div style={{ 
+              fontWeight: "600",
+              color: "#333",
+              fontSize: "14px",
+              marginBottom: "4px"
+            }}>
+              Admin
+            </div>
+            <div style={{
+              fontSize: "13px",
+              color: "#6c757d",
+              fontWeight: "500"
+            }}>
+              Acesso total ao sistema
+            </div>
+          </div>
+        );
+      
+      case 'MEDICO':
+        return (
+          <div style={{ textAlign: "right" }}>
+            <div style={{ 
+              fontWeight: "600",
+              color: "#333",
+              fontSize: "14px",
+              marginBottom: "4px"
+            }}>
+              Dr. {pessoaData?.dataDetalhesPessoa?.nome || 'Médico'}
+            </div>
+            <div style={{
+              display: "flex",
+              gap: "10px",
+              fontSize: "13px"
+            }}>
+              <span style={{ color: "#6c757d", fontWeight: "500" }}>
+                CRM: {pessoaData?.crm || 'N/A'}
+              </span>
+              <span style={{ color: "#17a2b8", fontWeight: "500" }}>
+                Especialidade: {pessoaData?.especialidade || 'N/A'}
+              </span>
+            </div>
+          </div>
+        );
+      
+      case 'PACIENTE':
+        return (
+          <div style={{ textAlign: "right" }}>
+            <div style={{ 
+              fontWeight: "600",
+              color: "#333",
+              fontSize: "14px",
+              marginBottom: "4px"
+            }}>
+              {pessoaData?.dataDetalhesPessoa?.nome || 'Paciente'}
+            </div>
+            <div style={{
+              display: "flex",
+              gap: "10px",
+              fontSize: "13px"
+            }}>
+              <span style={{ color: "#28a745", fontWeight: "500" }}>
+                {/* LINHA CORRIGIDA ABAIXO */}
+                Plano: {pessoaData?.plano?.nome || 'Sem Plano'}
+              </span>
+              <span style={{ color: "#17a2b8", fontWeight: "500" }}>
+                Saldo: R$ {pessoaData?.dataDetalhesPessoa?.saldo?.toFixed(2) ?? '0.00'}
+              </span>
+            </div>
+          </div>
+        );
+      
+      default:
+        return (
+          <div style={{ textAlign: "right" }}>
+            <div style={{ 
+              fontWeight: "600",
+              color: "#333",
+              fontSize: "14px",
+              marginBottom: "4px"
+            }}>
+              Usuário
+            </div>
+            <div style={{ fontSize: "13px", color: "#6c757d" }}>
+              Tipo de conta não identificado
+            </div>
+          </div>
+        );
+    }
+  };
 
   return (
     <div style={{ 
@@ -48,35 +158,9 @@ const UserProfile = () => {
         <div>Carregando...</div>
       ) : (
         <>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ 
-              fontWeight: "600",
-              color: "#333",
-              fontSize: "14px",
-              marginBottom: "4px"
-            }}>
-              {pessoaData?.dataDetalhesPessoa.nome || user.nome}
-            </div>
-            <div style={{
-              display: "flex",
-              gap: "10px",
-              fontSize: "13px"
-            }}>
-              <span style={{ color: "#28a745", fontWeight: "500" }}>
-                Plano: {pessoaData?.plano || 'N/A'}
-              </span>
-              {pessoaData?.dataDetalhesPessoa?.saldo !== undefined && (
-                <span style={{ color: "#17a2b8", fontWeight: "500" }}>
-                  Saldo: R$ {pessoaData.dataDetalhesPessoa.saldo.toFixed(2)}
-                </span>
-              )}
-            </div>
-          </div>
+          {renderProfileContent()}
           <button 
-            onClick={() => {
-              logout();
-              navigate('/');
-            }}
+            onClick={handleLogout}
             style={{ 
               padding: "6px 12px",
               background: "#dc3545",
@@ -85,10 +169,7 @@ const UserProfile = () => {
               borderRadius: "4px",
               cursor: "pointer",
               fontSize: "13px",
-              transition: "background 0.2s",
-              ':hover': {
-                background: "#c82333"
-              }
+              transition: "background 0.2s"
             }}
           >
             Sair
