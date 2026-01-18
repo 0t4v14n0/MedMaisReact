@@ -2,182 +2,171 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from '../api/api';
 import { useAuth } from "../auth/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { generateStyles } from "../styles/globalStyles";
+import { useRole } from "../contexts/RoleContext";
+import { FiLogOut, FiUser } from 'react-icons/fi';
 
 const UserProfile = () => {
-  const { user, roles, logout } = useAuth();
-  const navigate = useNavigate();
-  const [pessoaData, setPessoaData] = useState(null);
-  const [loading, setLoading] = useState(false);
+    const { user, roles, logout } = useAuth();
+    const navigate = useNavigate();
+    const { isDarkMode } = useTheme();
+    const styles = generateStyles(isDarkMode);
+    const { activeRole } = useRole(); 
 
-  // Verifica se o usuário tem algum role (pega o primeiro role como principal)
-  const userRole = roles.length > 0 ? roles[0] : null;
+    const [pessoaData, setPessoaData] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // Só faz fetch se for usuário válido, tiver token e não for ADMIN
-    if (user?.token && userRole && userRole !== 'ADMIN') {
-      setLoading(true);
-      const fetchPessoaData = async () => {
-        try {
-          const response = await api.get('/pessoa/dados', {
-            headers: {
-              'Authorization': `Bearer ${user.token}`
-            }
-          });
-          setPessoaData(response.data);
-        } catch (error) {
-          console.error("Erro ao buscar dados da pessoa:", error);
-        } finally {
-          setLoading(false);
+    useEffect(() => {
+        const shouldFetchData = user?.token && roles.some(r => r !== 'ADMIN');
+
+        if (shouldFetchData) {
+            setLoading(true);
+            const fetchPessoaData = async () => {
+                try {
+                    const response = await api.get('/pessoa/dados/profile');
+                    setPessoaData(response.data);
+                } catch (error) {
+                    console.error("Erro ao buscar dados de perfil:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchPessoaData();
         }
-      };
-      
-      fetchPessoaData();
-    }
-  }, [user, userRole]);
+    }, [user?.token, JSON.stringify(roles)]);
 
-  const handleLogout = () => {
-    // Reset local state before logout
-    setPessoaData(null);
-    setLoading(false);
-    
-    // Perform logout
-    logout();
-    
-    // Redirect
-    navigate('/');
-  };
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
 
-  if (!user || !userRole) return null;
+    if (!user) return null;
 
-  const renderProfileContent = () => {
-    switch(userRole) {
-      case 'ADMIN':
-        return (
-          <div style={{ textAlign: "right" }}>
-            <div style={{ 
-              fontWeight: "600",
-              color: "#333",
-              fontSize: "14px",
-              marginBottom: "4px"
-            }}>
-              Admin
+    const getFirstName = (fullName) => fullName ? fullName.split(' ')[0] : 'Usuário';
+    const fotoUrl = pessoaData?.dataDetalhesPessoa?.fotoPerfilUrl;
+
+    // --- LÓGICA DE CONTEÚDO DO PERFIL ---
+    const getProfileContent = () => {
+        if (loading && activeRole !== 'ADMIN') {
+            return { name: 'Carregando...', detail: '...' };
+        }
+
+        switch (activeRole) {
+            case 'ADMIN':
+                return { name: 'Administrador', detail: 'Gerenciamento' };
+            
+            case 'MEDICO':
+                return {
+                    name: `Dr(a). ${getFirstName(pessoaData?.dataDetalhesFuncionario?.dataDetalhesPessoa?.nome)}`,
+                    detail: pessoaData?.especialidadesMedica?.[0]?.nome || 'Especialista'
+                };
+            
+            case 'PACIENTE':
+                return {
+                    name: getFirstName(pessoaData?.dataDetalhesPessoa?.nome),
+                    detail: pessoaData?.plano ? `Plano: ${pessoaData.plano.nome}` : 'Particular',
+                    // ✨ AQUI: Adicionamos o saldo especificamente para o Paciente
+                    saldo: pessoaData?.dataDetalhesPessoa?.saldo
+                };
+            
+            case 'RECEPCAO':
+            case 'FINANCEIRO':
+            case 'COLETA':
+            case 'LABORATORIO':
+            case 'PROFESSOR':
+                return {
+                    name: getFirstName(pessoaData?.dataDetalhesFuncionario?.dataDetalhesPessoa?.nome),
+                    detail: activeRole.charAt(0) + activeRole.slice(1).toLowerCase()
+                };
+            
+            default:
+                return {
+                    name: getFirstName(user.name) || 'Colaborador',
+                    detail: 'Bem-vindo'
+                };
+        }
+    };
+
+    const content = getProfileContent();
+
+    // Formata moeda
+    const formatarDinheiro = (valor) => {
+        return valor ? Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
+    };
+
+    return (
+        <div style={{
+            display: "flex", alignItems: "center", gap: "12px",
+            padding: "6px 8px 6px 16px",
+            backgroundColor: styles.colors.lightGray,
+            borderRadius: "30px",
+            border: `1px solid ${styles.colors.borderLight}`,
+            transition: 'all 0.2s ease'
+        }}>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                <span style={{ fontSize: "13px", fontWeight: "700", color: styles.colors.textDark, whiteSpace: "nowrap" }}>
+                    {content.name}
+                </span>
+                
+                <span style={{ fontSize: "11px", fontWeight: "500", color: styles.colors.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    {content.detail}
+                </span>
+
+                {/* ✨ VISUALIZAÇÃO DO SALDO (Só aparece se content.saldo existir) */}
+                {content.saldo !== undefined && (
+                    <span style={{ 
+                        fontSize: "11px", 
+                        fontWeight: "800", 
+                        color: styles.colors.success, // Verde para dinheiro
+                        marginTop: '2px'
+                    }}>
+                        {formatarDinheiro(content.saldo)}
+                    </span>
+                )}
             </div>
+
+            {/* Avatar */}
             <div style={{
-              fontSize: "13px",
-              color: "#6c757d",
-              fontWeight: "500"
+                width: "36px", height: "36px", borderRadius: "50%", // Aumentei levemente para acomodar 3 linhas de texto se precisar
+                backgroundColor: styles.colors.white,
+                display: "flex", alignItems: "center", justifyContent: 'center',
+                color: styles.colors.textMuted,
+                boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                overflow: "hidden",
+                border: `1px solid ${styles.colors.borderLight}`
             }}>
-              Acesso total ao sistema
+                {fotoUrl ? (
+                    <img 
+                        src={fotoUrl} 
+                        alt="Perfil" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => { e.target.style.display = 'none'; }} 
+                    />
+                ) : (
+                    <FiUser size={18} />
+                )}
             </div>
-          </div>
-        );
-      
-      case 'MEDICO':
-        return (
-          <div style={{ textAlign: "right" }}>
-            <div style={{ 
-              fontWeight: "600",
-              color: "#333",
-              fontSize: "14px",
-              marginBottom: "4px"
-            }}>
-              Dr. {pessoaData?.dataDetalhesPessoa?.nome || 'Médico'}
-            </div>
-            <div style={{
-              display: "flex",
-              gap: "10px",
-              fontSize: "13px"
-            }}>
-              <span style={{ color: "#6c757d", fontWeight: "500" }}>
-                CRM: {pessoaData?.crm || 'N/A'}
-              </span>
-              <span style={{ color: "#17a2b8", fontWeight: "500" }}>
-                Especialidade: {pessoaData?.especialidade || 'N/A'}
-              </span>
-            </div>
-          </div>
-        );
-      
-      case 'PACIENTE':
-        return (
-          <div style={{ textAlign: "right" }}>
-            <div style={{ 
-              fontWeight: "600",
-              color: "#333",
-              fontSize: "14px",
-              marginBottom: "4px"
-            }}>
-              {pessoaData?.dataDetalhesPessoa?.nome || 'Paciente'}
-            </div>
-            <div style={{
-              display: "flex",
-              gap: "10px",
-              fontSize: "13px"
-            }}>
-              <span style={{ color: "#28a745", fontWeight: "500" }}>
-                {/* LINHA CORRIGIDA ABAIXO */}
-                Plano: {pessoaData?.plano?.nome || 'Sem Plano'}
-              </span>
-              <span style={{ color: "#17a2b8", fontWeight: "500" }}>
-                Saldo: R$ {pessoaData?.dataDetalhesPessoa?.saldo?.toFixed(2) ?? '0.00'}
-              </span>
-            </div>
-          </div>
-        );
-      
-      default:
-        return (
-          <div style={{ textAlign: "right" }}>
-            <div style={{ 
-              fontWeight: "600",
-              color: "#333",
-              fontSize: "14px",
-              marginBottom: "4px"
-            }}>
-              Usuário
-            </div>
-            <div style={{ fontSize: "13px", color: "#6c757d" }}>
-              Tipo de conta não identificado
-            </div>
-          </div>
-        );
-    }
-  };
 
-  return (
-    <div style={{ 
-      display: "flex", 
-      alignItems: "center", 
-      gap: "15px",
-      padding: "8px 12px",
-      backgroundColor: "#f8f9fa",
-      borderRadius: "8px",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-    }}>
-      {loading ? (
-        <div>Carregando...</div>
-      ) : (
-        <>
-          {renderProfileContent()}
-          <button 
-            onClick={handleLogout}
-            style={{ 
-              padding: "6px 12px",
-              background: "#dc3545",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "13px",
-              transition: "background 0.2s"
-            }}
-          >
-            Sair
-          </button>
-        </>
-      )}
-    </div>
-  );
+            <div style={{ width: "1px", height: "24px", backgroundColor: styles.colors.border, margin: "0 4px" }}></div>
+
+            <button 
+                onClick={handleLogout}
+                title="Sair do sistema"
+                style={{
+                    background: "transparent", border: "none", cursor: "pointer",
+                    color: styles.colors.danger, display: "flex", alignItems: "center",
+                    justifyContent: "center", padding: "6px", borderRadius: "50%",
+                    transition: "background-color 0.2s"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${styles.colors.danger}15`}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+            >
+                <FiLogOut size={18} />
+            </button>
+        </div>
+    );
 };
 
 export default UserProfile;

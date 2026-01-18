@@ -25,12 +25,23 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      // Remove token e redireciona
-      localStorage.removeItem("token");
-      window.location.href = "/login";
+    const { config, response } = error;
+    
+    // Verifica se a resposta de erro existe e se o status é 401 ou 403
+    if (response && (response.status === 401 || response.status === 403)) {
+        
+        // CONDIÇÃO IMPORTANTE: Só redireciona se o erro NÃO veio da página de login.
+        if (config.url !== '/pessoa/login') {
+            
+            // Lógica correta para quando a sessão expira noutra página
+            console.log("Sessão expirada ou acesso negado. A redirecionar...");
+            localStorage.removeItem("token"); 
+            // O seu useAuth() deve cuidar de limpar o estado
+            window.location.href = "/login"; 
+        }
     }
 
+    // Passa o erro para a frente para que o 'catch' do componente original (Login) o possa tratar.
     return Promise.reject(error);
   }
 );
