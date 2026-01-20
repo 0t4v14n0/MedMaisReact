@@ -1,8 +1,10 @@
 import axios from "axios";
 
 // Cria a instância do axios
+const urlBase = import.meta.env?.VITE_API_URL || process.env.REACT_APP_API_URL;
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+  baseURL: urlBase,
 });
 
 const publicRoutes = ["/pessoa/login", "/pessoa/registro", "/medico/especialidade"];

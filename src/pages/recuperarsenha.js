@@ -4,7 +4,7 @@ import api from '../api/api';
 import { useTheme } from '../contexts/ThemeContext'; // Importe o hook do tema
 import { getAuthStyles } from '../styles/authStyles'; // Importe a função de estilos dinâmicos
 
-const RecuperarSenha = () => {
+const Recuperarsenha = () => {
     const [emailOuLogin, setEmailOuLogin] = useState('');
     const [novaSenha, setNovaSenha] = useState('');
     const [confirmarSenha, setConfirmarSenha] = useState('');
@@ -149,4 +149,4 @@ const RecuperarSenha = () => {
     );
 };
 
-export default RecuperarSenha;
+export default Recuperarsenha;
