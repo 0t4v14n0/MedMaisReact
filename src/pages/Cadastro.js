@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext'; // Importe o hook do tema
+import { useTheme } from '../contexts/ThemeContext';
 import api from '../api/api';
-import { getAuthStyles } from '../styles/authStyles'; // Importe a função de estilos
+import { getAuthStyles } from '../styles/authStyles';
 
 export default function Registro() {
     const navigate = useNavigate();
     const { isDarkMode } = useTheme();
     const styles = getAuthStyles(isDarkMode);
 
-    // Estado para controlar a etapa atual do formulário
     const [currentStep, setCurrentStep] = useState(1);
 
     const [formData, setFormData] = useState({
@@ -37,17 +36,53 @@ export default function Registro() {
         }
     });
 
-    // Estado para a confirmação de senha e erros de validação
     const [confirmPassword, setConfirmPassword] = useState('');
     const [errors, setErrors] = useState({});
-
     const [fotoPerfil, setFotoPerfil] = useState(null);
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // --- NOVA FUNÇÃO: BUSCA CEP ---
+    const buscarCep = async (e) => {
+        // Remove tudo que não é número para validar
+        const cep = e.target.value.replace(/\D/g, '');
+
+        if (cep.length === 8) {
+            try {
+                // Consulta a API do ViaCEP
+                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                const data = await response.json();
+
+                if (!data.erro) {
+                    // Se achou, atualiza o formulário
+                    setFormData(prev => ({
+                        ...prev,
+                        dataRegistroPessoa: {
+                            ...prev.dataRegistroPessoa,
+                            dataRegistroEndereco: {
+                                ...prev.dataRegistroPessoa.dataRegistroEndereco,
+                                endereco: data.logradouro,
+                                cidade: data.localidade,
+                                estado: data.uf,
+                                cep: cep // Mantém o CEP formatado ou limpo
+                            }
+                        }
+                    }));
+                    // Limpa erro de CEP se existir
+                    setErrors(prev => ({ ...prev, cep: null }));
+                } else {
+                    setErrors(prev => ({ ...prev, cep: 'CEP não encontrado.' }));
+                }
+            } catch (error) {
+                console.error("Erro ao buscar CEP:", error);
+                setErrors(prev => ({ ...prev, cep: 'Erro ao buscar CEP.' }));
+            }
+        }
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
-        // Limpa o erro do campo ao ser modificado
+        
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
@@ -70,7 +105,6 @@ export default function Registro() {
         }
     };
 
-    // Funções de navegação e validação por etapa
     const nextStep = () => {
         if (validateStep()) {
             setCurrentStep(prev => prev + 1);
@@ -78,7 +112,7 @@ export default function Registro() {
     };
 
     const prevStep = () => {
-        setErrors({}); // Limpa os erros ao voltar
+        setErrors({});
         setCurrentStep(prev => prev - 1);
     };
 
@@ -125,7 +159,7 @@ export default function Registro() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!validateStep()) return; // Validação final antes de enviar
+        if (!validateStep()) return;
 
         setLoading(true);
         setMessage('');
@@ -240,15 +274,35 @@ export default function Registro() {
                         </div>
                     )}
                     
-                    {/* ETAPA 3: ENDEREÇO */}
+                    {/* ETAPA 3: ENDEREÇO (COM BUSCA DE CEP) */}
                     {currentStep === 3 && (
                          <div style={styles.formSection}>
                             <h3 style={styles.sectionTitle}>Endereço</h3>
+                            
+                            {/* CEP AGORA VEM PRIMEIRO E COM BUSCA AUTOMÁTICA */}
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>CEP</label>
+                                <input 
+                                    name="cep" 
+                                    value={formData.dataRegistroPessoa.dataRegistroEndereco.cep} 
+                                    style={styles.input} 
+                                    placeholder="00000-000" 
+                                    onChange={handleChange}
+                                    onBlur={buscarCep} // AQUI A MÁGICA ACONTECE
+                                    maxLength={9}
+                                />
+                                <ErrorMessage name="cep" />
+                                <small style={{color: styles.colors.textMuted, fontSize: '11px'}}>
+                                    Digite o CEP para buscar o endereço automaticamente.
+                                </small>
+                            </div>
+
                             <div style={styles.inputGroup}>
                                 <label style={styles.label}>Endereço</label>
                                 <input name="endereco" value={formData.dataRegistroPessoa.dataRegistroEndereco.endereco} style={styles.input} placeholder="Rua, Av, etc." onChange={handleChange} />
                                 <ErrorMessage name="endereco" />
                             </div>
+                            
                             <div style={styles.formGrid}>
                                 <div style={styles.inputGroup}>
                                     <label style={styles.label}>Cidade</label>
@@ -259,11 +313,6 @@ export default function Registro() {
                                     <label style={styles.label}>Estado (UF)</label>
                                     <input name="estado" value={formData.dataRegistroPessoa.dataRegistroEndereco.estado} style={styles.input} maxLength="2" placeholder="PE" onChange={handleChange} />
                                     <ErrorMessage name="estado" />
-                                </div>
-                                 <div style={styles.inputGroup}>
-                                    <label style={styles.label}>CEP</label>
-                                    <input name="cep" value={formData.dataRegistroPessoa.dataRegistroEndereco.cep} style={styles.input} placeholder="00000-000" onChange={handleChange} />
-                                    <ErrorMessage name="cep" />
                                 </div>
                             </div>
                         </div>
