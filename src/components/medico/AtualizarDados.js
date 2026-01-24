@@ -1,479 +1,350 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../api/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import { generateStyles } from '../../styles/globalStyles';
-import { FiDownload, FiEye, FiCalendar, FiArrowLeft } from 'react-icons/fi';
 
-const MeusContracheques = () => {
-  const [contracheques, setContracheques] = useState([]);
-  const [contrachequeSelecionado, setContrachequeSelecionado] = useState(null);
-  const [anoFiltro, setAnoFiltro] = useState(new Date().getFullYear());
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState(null);
-  const { isDarkMode } = useTheme();
-  
-  const { colors, app } = generateStyles(isDarkMode) || {};
-  
-  const safeColors = colors || {
-    textMuted: '#6c757d',
-    primary: '#00C7B4',
-    success: '#28a745',
-    danger: '#dc3545',
-    warning: '#ffc107',
-    info: '#17a2b8'
-  };
+// =================================================================
+// 🎨 UI COMPONENTS (MANTIDOS)
+// =================================================================
 
-  // Buscar contracheques da API
-  useEffect(() => {
-    const fetchContracheques = async () => {
-      try {
-        setCarregando(true);
-        setErro(null);
-        
-        // Obter token de autenticação (ajuste conforme sua implementação)
-        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        
-        const response = await fetch(`/api/funcionario/contracheque/${anoFiltro}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Erro ${response.status}: ${response.statusText}`);
-        }
-        
-        const dados = await response.json();
-        setContracheques(dados.contracheques || []);
-        setCarregando(false);
-      } catch (error) {
-        console.error('Erro ao buscar contracheques:', error);
-        setErro(error.message);
-        setCarregando(false);
-      }
-    };
-
-    fetchContracheques();
-  }, [anoFiltro]); // Recarregar quando o ano do filtro mudar
-
-  const formatarMoeda = (valor) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(valor);
-  };
-
-  const formatarData = (dataString) => {
-    return new Date(dataString).toLocaleDateString('pt-BR');
-  };
-
-  const getNomeMes = (dataString) => {
-    const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR', { month: 'long' });
-  };
-
-  const handleVisualizarContracheque = (contracheque) => {
-    setContrachequeSelecionado(contracheque);
-  };
-
-  const handleFecharDetalhes = () => {
-    setContrachequeSelecionado(null);
-  };
-
-  const handleDownload = async (contracheque) => {
-    try {
-      // Obter token de autenticação
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      
-      const response = await fetch(`/api/funcionario/contracheque/download/${contracheque.id}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Erro ${response.status}: ${response.statusText}`);
-      }
-      
-      // Criar blob do PDF
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      
-      // Criar link para download
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `contracheque-${getNomeMes(contracheque.mes_ano_referencia)}-${new Date(contracheque.mes_ano_referencia).getFullYear()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Limpar
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(link);
-      
-    } catch (error) {
-      console.error('Erro ao baixar contracheque:', error);
-      alert('Erro ao baixar o contracheque. Tente novamente.');
-    }
-  };
-
-  // Gerar opções de anos (dos últimos 5 anos até o ano atual)
-  const gerarOpcoesAnos = () => {
-    const anoAtual = new Date().getFullYear();
-    const anos = [];
-    
-    for (let i = 0; i < 5; i++) {
-      anos.push(anoAtual - i);
-    }
-    
-    return anos;
-  };
-
-  if (carregando && contracheques.length === 0) {
-    return (
-      <div style={app?.card || {}}>
-        <p>Carregando contracheques...</p>
-      </div>
-    );
-  }
-
-  if (erro && contracheques.length === 0) {
-    return (
-      <div style={app?.card || {}}>
-        <div style={{ color: safeColors.danger, padding: '20px', textAlign: 'center' }}>
-          <h3>Erro ao carregar contracheques</h3>
-          <p>{erro}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            style={{
-              background: safeColors.primary,
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              marginTop: '10px'
-            }}
-          >
-            Tentar Novamente
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (contrachequeSelecionado) {
-    return (
-      <div style={app?.card || {}}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={app?.title || {}}>
-            Contracheque - {getNomeMes(contrachequeSelecionado.mes_ano_referencia)}/{new Date(contrachequeSelecionado.mes_ano_referencia).getFullYear()}
-          </h2>
-          <button 
-            onClick={handleFecharDetalhes}
-            style={{
-              background: 'transparent',
-              color: safeColors.primary,
-              border: `1px solid ${safeColors.primary}`,
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <FiArrowLeft /> Voltar
-          </button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-          <div style={{ ...app?.card, padding: '15px', margin: 0 }}>
-            <h3 style={{ marginTop: 0, color: safeColors.primary }}>Proventos</h3>
-            <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Salário Bruto:</span>
-                <strong>{formatarMoeda(contrachequeSelecionado.salario_bruto)}</strong>
-              </div>
-            </div>
-            
-            {contrachequeSelecionado.proventos_adicionais && contrachequeSelecionado.proventos_adicionais.map((provento, index) => (
-              <div key={index} style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{provento.descricao}:</span>
-                  <strong style={{ color: safeColors.success }}>{formatarMoeda(provento.valor)}</strong>
-                </div>
-              </div>
-            ))}
-            
-            <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '2px solid #ddd' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Total de Proventos:</span>
-                <strong>
-                  {formatarMoeda(
-                    contrachequeSelecionado.salario_bruto + 
-                    (contrachequeSelecionado.proventos_adicionais ? 
-                      contrachequeSelecionado.proventos_adicionais.reduce((total, provento) => total + provento.valor, 0) : 0)
-                  )}
-                </strong>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ ...app?.card, padding: '15px', margin: 0 }}>
-            <h3 style={{ marginTop: 0, color: safeColors.primary }}>Descontos</h3>
-            <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>INSS:</span>
-                <strong style={{ color: safeColors.danger }}>{formatarMoeda(contrachequeSelecionado.inss)}</strong>
-              </div>
-            </div>
-            <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>IRRF:</span>
-                <strong style={{ color: safeColors.danger }}>{formatarMoeda(contrachequeSelecionado.irrf)}</strong>
-              </div>
-            </div>
-            <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Vale Transporte:</span>
-                <strong style={{ color: safeColors.danger }}>{formatarMoeda(contrachequeSelecionado.vale_transporte)}</strong>
-              </div>
-            </div>
-            <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Plano de Saúde:</span>
-                <strong style={{ color: safeColors.danger }}>{formatarMoeda(contrachequeSelecionado.plano_saude)}</strong>
-              </div>
-            </div>
-            <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Outros Descontos:</span>
-                <strong style={{ color: safeColors.danger }}>{formatarMoeda(contrachequeSelecionado.outros_descontos)}</strong>
-              </div>
-            </div>
-            
-            <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '2px solid #ddd' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Total de Descontos:</span>
-                <strong style={{ color: safeColors.danger }}>
-                  {formatarMoeda(
-                    contrachequeSelecionado.inss +
-                    contrachequeSelecionado.irrf +
-                    contrachequeSelecionado.vale_transporte +
-                    contrachequeSelecionado.plano_saude +
-                    contrachequeSelecionado.outros_descontos
-                  )}
-                </strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ ...app?.card, padding: '15px', marginBottom: '20px' }}>
-          <h3 style={{ marginTop: 0, color: safeColors.primary }}>Benefícios</h3>
-          {contrachequeSelecionado.beneficios && contrachequeSelecionado.beneficios.length > 0 ? (
-            contrachequeSelecionado.beneficios.map((beneficio, index) => (
-              <div key={index} style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #eee' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{beneficio.descricao}:</span>
-                  <strong style={{ color: safeColors.success }}>{formatarMoeda(beneficio.valor)}</strong>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p style={{ color: safeColors.textMuted }}>Nenhum benefício registrado.</p>
-          )}
-        </div>
-
-        <div style={{ ...app?.card, padding: '15px', background: '#f8f9fa' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, color: safeColors.primary }}>Salário Líquido</h3>
-            <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: safeColors.success }}>
-              {formatarMoeda(contrachequeSelecionado.salario_liquido)}
-            </span>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-          <button 
-            onClick={() => handleDownload(contrachequeSelecionado)}
-            style={{
-              background: safeColors.success,
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <FiDownload /> Baixar PDF
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={app?.container || {}}>
-      <div style={app?.card || {}}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={app?.title || {}}>Meus Contracheques</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <FiCalendar style={{ color: safeColors.primary }} />
-            <select 
-              value={anoFiltro}
-              onChange={(e) => setAnoFiltro(parseInt(e.target.value))}
-              style={{
-                padding: '8px',
-                borderRadius: '4px',
-                border: `1px solid ${safeColors.primary}`,
-                background: isDarkMode ? '#333' : 'white',
-                color: isDarkMode ? 'white' : 'black'
-              }}
-            >
-              {gerarOpcoesAnos().map(ano => (
-                <option key={ano} value={ano}>{ano}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {erro && (
-          <div style={{ 
-            padding: '10px', 
-            marginBottom: '15px', 
-            backgroundColor: '#ffebee', 
-            color: safeColors.danger,
-            borderRadius: '4px'
-          }}>
-            {erro}
-          </div>
-        )}
-
-        {contracheques.length === 0 ? (
-          <p>Nenhum contracheque disponível para {anoFiltro}.</p>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: `2px solid ${safeColors.primary}` }}>
-                  <th style={{ textAlign: 'left', padding: '12px' }}>Mês/Ano</th>
-                  <th style={{ textAlign: 'left', padding: '12px' }}>Salário Bruto</th>
-                  <th style={{ textAlign: 'left', padding: '12px' }}>Descontos</th>
-                  <th style={{ textAlign: 'left', padding: '12px' }}>Salário Líquido</th>
-                  <th style={{ textAlign: 'center', padding: '12px' }}>Status</th>
-                  <th style={{ textAlign: 'center', padding: '12px' }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contracheques.map((contracheque) => (
-                  <tr key={contracheque.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '12px' }}>
-                      {getNomeMes(contracheque.mes_ano_referencia)}/{new Date(contracheque.mes_ano_referencia).getFullYear()}
-                    </td>
-                    <td style={{ padding: '12px' }}>{formatarMoeda(contracheque.salario_bruto)}</td>
-                    <td style={{ padding: '12px' }}>
-                      {formatarMoeda(
-                        contracheque.inss +
-                        contracheque.irrf +
-                        contracheque.vale_transporte +
-                        contracheque.plano_saude +
-                        contracheque.outros_descontos
-                      )}
-                    </td>
-                    <td style={{ padding: '12px' }}>{formatarMoeda(contracheque.salario_liquido)}</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '0.85rem',
-                        backgroundColor: contracheque.status === 'disponivel' ? '#d4edda' : '#fff3cd',
-                        color: contracheque.status === 'disponivel' ? '#155724' : '#856404'
-                      }}>
-                        {contracheque.status === 'disponivel' ? 'Disponível' : 'Pendente'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                        <button
-                          onClick={() => handleVisualizarContracheque(contracheque)}
-                          style={{
-                            background: safeColors.primary,
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            padding: '6px 12px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <FiEye /> Visualizar
-                        </button>
-                        <button
-                          onClick={() => handleDownload(contracheque)}
-                          disabled={contracheque.status !== 'disponivel'}
-                          style={{
-                            background: contracheque.status === 'disponivel' ? safeColors.success : '#ccc',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            padding: '6px 12px',
-                            cursor: contracheque.status === 'disponivel' ? 'pointer' : 'not-allowed',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <FiDownload /> PDF
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {carregando && (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <p>Carregando...</p>
-          </div>
-        )}
-
-        <div style={{ marginTop: '30px', ...app?.card, padding: '15px' }}>
-          <h3 style={{ marginTop: 0, color: safeColors.primary }}>Resumo Anual - {anoFiltro}</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-            <div style={{ textAlign: 'center', padding: '15px', border: `1px solid ${safeColors.primary}`, borderRadius: '4px' }}>
-              <div style={{ fontSize: '0.9rem', color: safeColors.textMuted }}>Total Bruto</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: safeColors.primary }}>
-                {formatarMoeda(contracheques.reduce((total, c) => total + c.salario_bruto, 0))}
-              </div>
-            </div>
-            <div style={{ textAlign: 'center', padding: '15px', border: `1px solid ${safeColors.primary}`, borderRadius: '4px' }}>
-              <div style={{ fontSize: '0.9rem', color: safeColors.textMuted }}>Total Líquido</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: safeColors.success }}>
-                {formatarMoeda(contracheques.reduce((total, c) => total + c.salario_liquido, 0))}
-              </div>
-            </div>
-            <div style={{ textAlign: 'center', padding: '15px', border: `1px solid ${safeColors.primary}`, borderRadius: '4px' }}>
-              <div style={{ fontSize: '0.9rem', color: safeColors.textMuted }}>Média Mensal</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: safeColors.info }}>
-                {formatarMoeda(contracheques.reduce((total, c) => total + c.salario_liquido, 0) / contracheques.length)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+const ModernToast = ({ message, type, onClose, styles }) => (
+    <div style={{
+        position: 'fixed', top: '24px', right: '24px', padding: '16px 24px', borderRadius: '16px',
+        backgroundColor: styles.colors.white, borderLeft: `6px solid ${type === 'success' ? styles.colors.success : styles.colors.danger}`,
+        boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 1100, display: 'flex', alignItems: 'center', gap: '16px',
+        animation: 'slideIn 0.3s ease-out', border: `1px solid ${styles.colors.borderLight}`
+    }}>
+        <span style={{ fontWeight: '600', fontSize: '14px', color: styles.colors.textDark }}>{message}</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: styles.colors.textMuted }}>×</button>
     </div>
-  );
+);
+
+const ModernInput = ({ label, name, value, onChange, disabled, type = "text", placeholder, styles, width = "100%" }) => (
+    <div style={{ width, marginBottom: '16px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: '700', color: styles.colors.textMuted, textTransform: 'uppercase' }}>{label}</label>
+        <input 
+            type={type} name={name} value={value || ''} onChange={onChange} disabled={disabled} placeholder={placeholder}
+            style={{
+                width: '100%', padding: '14px 16px', borderRadius: '12px', border: `1px solid ${disabled ? 'transparent' : styles.colors.border}`,
+                backgroundColor: disabled ? styles.colors.lightGray : styles.colors.white, color: disabled ? styles.colors.textMuted : styles.colors.textDark,
+                fontSize: '14px', fontWeight: '500', outline: 'none', transition: 'all 0.2s ease', boxSizing: 'border-box'
+            }}
+        />
+    </div>
+);
+
+const ActionButton = ({ children, onClick, disabled, loading, styles, variant = 'primary' }) => {
+    const bgColor = variant === 'save' ? styles.colors.success : styles.colors.primary;
+    return (
+        <button onClick={onClick} disabled={disabled || loading} style={{
+            padding: '12px 24px', borderRadius: '30px', border: 'none', backgroundColor: disabled ? styles.colors.disabled : bgColor,
+            color: styles.colors.white, fontSize: '14px', fontWeight: '600', cursor: disabled || loading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: disabled ? 'none' : '0 4px 12px rgba(0,0,0,0.1)'
+        }}>
+            {loading ? '...' : children}
+        </button>
+    );
 };
 
-export default MeusContracheques;
+// SectionCard agora aceita null no onEdit para esconder o botão
+const SectionCard = ({ title, onEdit, isEditing, children, styles, onSave, loading }) => (
+    <div style={{ backgroundColor: styles.colors.white, borderRadius: '24px', padding: '24px', marginBottom: '24px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', border: `1px solid ${styles.colors.borderLight}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: `1px solid ${styles.colors.borderLight}` }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: styles.colors.textDark }}>{title}</h3>
+            {onEdit && (
+                <button onClick={onEdit} style={{ background: 'transparent', border: 'none', color: isEditing ? styles.colors.danger : styles.colors.primary, fontWeight: '600', fontSize: '13px', cursor: 'pointer', padding: '8px 16px', borderRadius: '20px', backgroundColor: isEditing ? `${styles.colors.danger}15` : `${styles.colors.primary}15` }}>
+                    {isEditing ? 'Cancelar' : 'Editar'}
+                </button>
+            )}
+        </div>
+        <div>{children}</div>
+        {isEditing && onSave && (
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', paddingTop: '16px', borderTop: `1px dashed ${styles.colors.border}` }}>
+                <ActionButton onClick={onSave} loading={loading} styles={styles} variant="save">{loading ? 'Salvando...' : 'Salvar Alterações'}</ActionButton>
+            </div>
+        )}
+    </div>
+);
+
+// =================================================================
+// COMPONENTE PRINCIPAL
+// =================================================================
+
+const AtualizarDados = () => {
+    const { isDarkMode } = useTheme();
+    const styles = generateStyles(isDarkMode);
+    const [matches, setMatches] = useState(window.matchMedia('(max-width: 768px)').matches);
+
+    const [dados, setDados] = useState(null);
+    const [formData, setFormData] = useState({});
+    
+    // Configuração de edição (Profissional removido daqui pois não será editável)
+    const [editando, setEditando] = useState({ pessoais: false, endereco: false, senha: false, foto: false });
+    
+    const [loading, setLoading] = useState(true);
+    const [message, setMessage] = useState({ text: '', type: '' });
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState('');
+
+    useEffect(() => {
+        const handler = () => setMatches(window.matchMedia('(max-width: 768px)').matches);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
+
+    const popularFormData = (dadosApi) => {
+        const funcionario = dadosApi.dataDetalhesFuncionario || {};
+        const pessoa = funcionario.dataDetalhesPessoa || {};
+        const endereco = pessoa.dataDetalhesEndereco || {};
+        
+        setFormData({
+            // Editáveis
+            nome: pessoa.nome,
+            telefone: pessoa.telefone,
+            email: pessoa.email,
+            dataNascimento: pessoa.dataNascimento,
+            
+            endereco: endereco.endereco,
+            cidade: endereco.cidade,
+            estado: endereco.estado,
+            cep: endereco.cep,
+            pais: endereco.pais,
+            referencia: endereco.referencia,
+
+            // Apenas Leitura (mas precisamos popular para mostrar)
+            cpf: pessoa.cpf,
+            crm: dadosApi.crm,
+            valorConsultaPresencial: dadosApi.valorConsultaPresencial,
+            valorConsultaOnline: dadosApi.valorConsultaOnline,
+            especialidades: dadosApi.especialidadesMedica || [],
+
+            // Senha e Foto
+            senha: '',
+            confirmarSenha: '',
+            fotoPerfilUrl: dadosApi.fotoPerfilUrl || pessoa.fotoPerfilUrl
+        });
+
+        if (dadosApi.fotoPerfilUrl || pessoa.fotoPerfilUrl) {
+            setPreviewUrl(dadosApi.fotoPerfilUrl || pessoa.fotoPerfilUrl);
+        }
+    };
+
+    useEffect(() => {
+        const fetchDados = async () => {
+            setLoading(true);
+            try {
+                const response = await api.get("/medico/dados");
+                setDados(response.data);
+                popularFormData(response.data);
+            } catch (error) {
+                setMessage({ text: "Erro ao carregar dados.", type: 'error' });
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDados();
+    }, []);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => setPreviewUrl(reader.result);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const toggleEdicao = (section) => {
+        setEditando(prev => ({ ...prev, [section]: !prev[section] }));
+        if (editando[section]) {
+            popularFormData(dados); // Cancelar reverte as mudanças
+            if (section === 'foto') {
+                setSelectedFile(null);
+                const pessoa = dados.dataDetalhesFuncionario?.dataDetalhesPessoa || {};
+                setPreviewUrl(dados.fotoPerfilUrl || pessoa.fotoPerfilUrl || '');
+            }
+        }
+    };
+
+    const handleSubmit = async (section) => {
+        setLoading(true);
+        setMessage({ text: '', type: '' });
+        
+        const formPayload = new FormData();
+        
+        // Mantemos os dados originais que não são editáveis na tela
+        const especialidadesOriginais = dados.especialidadesMedica ? dados.especialidadesMedica.map(e => e.id) : [];
+
+        const payloadJson = {
+            pessoa: {
+                nome: formData.nome,
+                telefone: formData.telefone,
+                email: formData.email,
+                dataNascimento: formData.dataNascimento,
+                dataRegistroEndereco: {
+                    endereco: formData.endereco,
+                    cidade: formData.cidade,
+                    estado: formData.estado,
+                    cep: formData.cep,
+                    pais: formData.pais,
+                    referencia: formData.referencia
+                }
+            },
+            // Dados Profissionais vão inalterados
+            crm: dados.crm, 
+            valorConsultaPresencial: dados.valorConsultaPresencial, 
+            valorConsultaOnline: dados.valorConsultaOnline,
+            especialidadeIds: especialidadesOriginais 
+        };
+
+        if (section === 'senha') {
+             if (!formData.senha || formData.senha !== formData.confirmarSenha) {
+                setMessage({ text: 'Senhas não conferem.', type: 'error' }); 
+                setLoading(false); return;
+            }
+            payloadJson.pessoa.senha = formData.senha;
+        }
+
+        const jsonBlob = new Blob([JSON.stringify(payloadJson)], { type: 'application/json' });
+        formPayload.append('data', jsonBlob);
+        
+        if (section === 'foto' && selectedFile) {
+            formPayload.append('fotoPerfil', selectedFile);
+        }
+
+        try {
+            await api.put("/medico/atualizar", formPayload, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setMessage({ text: 'Dados atualizados com sucesso!', type: 'success' });
+            
+            const response = await api.get("/medico/dados");
+            setDados(response.data);
+            popularFormData(response.data);
+            
+            setEditando(prev => ({ ...prev, [section]: false }));
+            if(section === 'foto') setSelectedFile(null);
+
+        } catch (error) {
+            console.error(error);
+            setMessage({ text: error.response?.data?.message || "Falha ao atualizar.", type: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const gridStyle = { display: 'grid', gridTemplateColumns: matches ? '1fr' : '1fr 1fr', gap: '20px' };
+
+    if (loading && !dados) return <div style={{ padding: '40px', textAlign: 'center' }}>Carregando...</div>;
+
+    return (
+        <div style={{ padding: matches ? '20px' : '40px', backgroundColor: styles.colors.background, minHeight: '100vh' }}>
+            {message.text && <ModernToast message={message.text} type={message.type} onClose={() => setMessage({ text: '', type: '' })} styles={styles} />}
+
+            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <div style={{ marginBottom: '30px' }}>
+                    <h1 style={{ fontSize: '28px', fontWeight: '800', margin: '0 0 8px 0', color: styles.colors.textDark }}>
+                        Minha <span style={{ color: styles.colors.primary }}>Conta</span>
+                    </h1>
+                </div>
+
+                {/* FOTO */}
+                <SectionCard title="Foto de Perfil" onEdit={() => toggleEdicao('foto')} isEditing={editando.foto} onSave={() => handleSubmit('foto')} loading={loading} styles={styles}>
+                     <div style={{ display: 'flex', flexDirection: matches ? 'column' : 'row', alignItems: 'center', gap: '30px' }}>
+                        <div style={{ position: 'relative' }}>
+                            <div style={{ width: '120px', height: '120px', borderRadius: '50%', border: `4px solid ${styles.colors.white}`, boxShadow: '0 8px 20px rgba(0,0,0,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: styles.colors.lightGray }}>
+                                {previewUrl ? <img src={previewUrl} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '40px', color: styles.colors.textMuted }}>Dr.</span>}
+                            </div>
+                            {editando.foto && <div style={{ position: 'absolute', bottom: '0', right: '0', backgroundColor: styles.colors.primary, color: 'white', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `3px solid ${styles.colors.white}` }}>📷</div>}
+                        </div>
+                        {editando.foto && <input type="file" accept="image/*" onChange={handleFileChange} />}
+                    </div>
+                </SectionCard>
+
+                <div style={gridStyle}>
+                    <div>
+                        {/* PESSOAL - Editável */}
+                        <SectionCard title="👤 Dados Pessoais" onEdit={() => toggleEdicao('pessoais')} isEditing={editando.pessoais} onSave={() => handleSubmit('pessoais')} loading={loading} styles={styles}>
+                            <ModernInput label="Nome Completo" name="nome" value={formData.nome} onChange={handleChange} disabled={!editando.pessoais} styles={styles} />
+                            <ModernInput label="Email" name="email" value={formData.email} onChange={handleChange} disabled={!editando.pessoais} styles={styles} />
+                            <ModernInput label="CPF" name="cpf" value={formData.cpf} disabled={true} styles={styles} />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                <ModernInput label="Telefone" name="telefone" value={formData.telefone} onChange={handleChange} disabled={!editando.pessoais} styles={styles} />
+                                <ModernInput label="Nascimento" name="dataNascimento" type="date" value={formData.dataNascimento} onChange={handleChange} disabled={!editando.pessoais} styles={styles} />
+                            </div>
+                        </SectionCard>
+
+                         {/* SEGURANÇA - Editável */}
+                         <SectionCard title="🔒 Segurança" onEdit={() => toggleEdicao('senha')} isEditing={editando.senha} onSave={() => handleSubmit('senha')} loading={loading} styles={styles}>
+                            {editando.senha ? (
+                                <>
+                                    <ModernInput label="Nova Senha" name="senha" type="password" value={formData.senha} onChange={handleChange} disabled={false} placeholder="Min. 8 caracteres" styles={styles} />
+                                    <ModernInput label="Confirmar Senha" name="confirmarSenha" type="password" value={formData.confirmarSenha} onChange={handleChange} disabled={false} placeholder="Repita a senha" styles={styles} />
+                                </>
+                            ) : (
+                                <div style={{ color: styles.colors.textMuted, fontSize: '14px', fontStyle: 'italic' }}>Senha protegida.</div>
+                            )}
+                        </SectionCard>
+                    </div>
+
+                    <div>
+                        {/* ENDEREÇO - Editável */}
+                        <SectionCard title="📍 Endereço" onEdit={() => toggleEdicao('endereco')} isEditing={editando.endereco} onSave={() => handleSubmit('endereco')} loading={loading} styles={styles}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '15px' }}>
+                                <ModernInput label="Rua/Av" name="endereco" value={formData.endereco} onChange={handleChange} disabled={!editando.endereco} styles={styles} />
+                                <ModernInput label="CEP" name="cep" value={formData.cep} onChange={handleChange} disabled={!editando.endereco} styles={styles} />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                                <ModernInput label="Cidade" name="cidade" value={formData.cidade} onChange={handleChange} disabled={!editando.endereco} styles={styles} />
+                                <ModernInput label="UF" name="estado" value={formData.estado} onChange={handleChange} disabled={!editando.endereco} styles={styles} />
+                                <ModernInput label="País" name="pais" value={formData.pais} onChange={handleChange} disabled={!editando.endereco} styles={styles} />
+                            </div>
+                            <ModernInput label="Referência" name="referencia" value={formData.referencia} onChange={handleChange} disabled={!editando.endereco} styles={styles} />
+                        </SectionCard>
+
+                        {/* DADOS PROFISSIONAIS - APENAS LEITURA */}
+                        {/* Note que não passamos onEdit aqui, o botão de editar some */}
+                        <SectionCard title="🩺 Dados Profissionais" styles={styles}>
+                            <ModernInput label="CRM" value={formData.crm} disabled={true} styles={styles} />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                <ModernInput label="Valor Presencial" value={`R$ ${formData.valorConsultaPresencial || 0}`} disabled={true} styles={styles} />
+                                <ModernInput label="Valor Online" value={`R$ ${formData.valorConsultaOnline || 0}`} disabled={true} styles={styles} />
+                            </div>
+                            
+                            <div style={{ marginTop: '10px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: '700', color: styles.colors.textMuted, textTransform: 'uppercase' }}>Especialidades</label>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {formData.especialidades && formData.especialidades.length > 0 ? (
+                                        formData.especialidades.map(esp => (
+                                            <span key={esp.id} style={{
+                                                backgroundColor: styles.colors.lightGray, color: styles.colors.textDark,
+                                                padding: '6px 12px', borderRadius: '15px', fontSize: '12px', fontWeight: '600',
+                                                border: `1px solid ${styles.colors.border}`
+                                            }}>
+                                                {esp.nome}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span style={{ fontSize: '13px', color: styles.colors.textMuted }}>Nenhuma registrada.</span>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div style={{ marginTop: '16px', padding: '12px', backgroundColor: `${styles.colors.info}10`, borderRadius: '12px', border: `1px solid ${styles.colors.info}20` }}>
+                                <p style={{ fontSize: '12px', margin: 0, color: styles.colors.textMuted, fontStyle: 'italic' }}>
+                                    🔒 Para alterar dados contratuais, contate o administrador.
+                                </p>
+                            </div>
+                        </SectionCard>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default AtualizarDados;
