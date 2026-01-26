@@ -254,48 +254,108 @@ const ModalHistoricoPaciente = ({ doenca, onSave, onCancel, styles }) => {
     );
 };
 
-// 3. Modal Agendar Retorno (Simplificado para o Médico)
+// 3. Modal Agendar Retorno (Blindado)
 const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
     const [unidades, setUnidades] = useState([]);
     const [form, setForm] = useState({ unidadeId: '', data: null, horario: '' });
     const [agenda, setAgenda] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        api.get('/unidade/todas').then(res => setUnidades(res.data.content || res.data || []));
-    }, []);
+    // 1. Segurança: Pega o ID com Optional Chaining (?.) para não quebrar se consulta vier vazia
+    const medicoId = consulta?.dataDetalhesMedico?.dataDetalhesPessoa?.id;    
 
     useEffect(() => {
-        if(form.unidadeId) {
-            setLoading(true);
-            const params = new URLSearchParams({ 
-                idUnidade: form.unidadeId, 
-                idMedico: consulta.dataDetalhesMedico.id, 
-                periodoEmDias: 45 
-            });
-            api.get(`/agenda/medico/datas-horarios-disponiveis?${params}`)
-               .then(res => setAgenda(res.data || []))
-               .finally(() => setLoading(false));
-        }
-    }, [form.unidadeId, consulta.dataDetalhesMedico.id]);
+        api.get('/unidade/todas')
+           .then(res => setUnidades(res.data.content || res.data || []))
+           .catch(() => mostrarToast("Erro ao carregar unidades", "error"));
+    }, []);
+        useEffect(() => {
+                // --- DEBUG DE RASTREAMENTO ---
+                console.log("--- TENTATIVA DE BUSCAR AGENDA ---");
+                console.log("1. ID Unidade:", form.unidadeId);
+                console.log("2. ID Médico:", medicoId);
+                
+                // Verificação explícita
+                if (!form.unidadeId) console.warn(">>> BLOQUEADO: Unidade não selecionada");
+                if (!medicoId) console.warn(">>> BLOQUEADO: ID do Médico é inválido/nulo");
+
+                if(form.unidadeId && medicoId) {
+                    console.log("3. DADOS OK. MONTANDO REQUISIÇÃO...");
+                    
+                    setLoading(true);
+                    setAgenda([]); 
+                    
+                    const params = new URLSearchParams({ 
+                        idUnidade: form.unidadeId, 
+                        idMedico: medicoId.toString(), 
+                        periodoEmDias: 45,
+                        tipo: 'RETORNO' // OBRIGATÓRIO
+                    });
+
+                    const urlCompleta = `/agenda/medico/datas-horarios-disponiveis?${params}`;
+                    console.log("4. URL GERADA:", urlCompleta);
+                    console.log("5. DISPARANDO AXIOS AGORA...");
+
+                    api.get(urlCompleta)
+                        .then(res => {
+                            console.log("6. SUCESSO! RESPOSTA DO BACKEND:", res.data);
+                            setAgenda(res.data || []);
+                        })
+                        .catch(err => {
+                            console.error("6. ERRO NA VOLTA DO BACKEND:", err);
+                            // IMPORTANTE: Mostra se foi 404, 400, 500 ou Network Error
+                            if (err.response) {
+                                console.error("STATUS:", err.response.status);
+                                console.error("DADOS:", err.response.data);
+                            } else {
+                                console.error("ERRO DE REDE/CORS (Nem chegou no server)");
+                            }
+                            mostrarToast("Erro ao buscar agenda.", "error");
+                        })
+                        .finally(() => setLoading(false));
+                }
+        }, [form.unidadeId, medicoId]);
 
     const handleAgendar = async () => {
         if(!form.data || !form.horario) return mostrarToast("Selecione data e horário.", "error");
+        
         try {
-            const dataISO = form.data.toISOString().split('T')[0];
+            // 3. Tratamento de Fuso Horário (Fix para datas incorretas)
+            // O toISOString() pode pegar o dia anterior dependendo do fuso. 
+            // Usamos 'sv-SE' para forçar o formato YYYY-MM-DD localmente.
+            const year = form.data.getFullYear();
+            const month = String(form.data.getMonth() + 1).padStart(2, '0');
+            const day = String(form.data.getDate()).padStart(2, '0');
+            const dataISO = `${year}-${month}-${day}`;
+            
             await api.post('medico/consulta/marcar/retorno', {
                 pacienteId: consulta.dataDetalhesPaciente.dataDetalhesPessoa.id,
-                medicoId: consulta.dataDetalhesMedico.id,
+                medicoId: medicoId,
                 unidadeId: form.unidadeId,
                 horario: `${dataISO}T${form.horario}`
             });
-            mostrarToast("Retorno agendado!");
+            
+            mostrarToast("Retorno agendado com sucesso!", "success");
             onCancel();
-        } catch (e) { mostrarToast("Erro ao agendar.", "error"); }
+        } catch (e) {
+            console.error(e);
+            mostrarToast(e.response?.data?.message || "Erro ao agendar.", "error"); 
+        }
     };
 
-    const dates = agenda.map(i => { const [y,m,d] = i.data.split('-'); return new Date(y, m-1, d); });
-    const hours = form.data ? (agenda.find(i => i.data === form.data.toISOString().split('T')[0])?.horarios || []) : [];
+    // Ajuste seguro para renderização das datas
+    const dates = agenda.map(i => { 
+        // Força interpretação da data como local para evitar problemas de -3h (Brasil)
+        const [y,m,d] = i.data.split('-'); 
+        return new Date(y, m-1, d); 
+    });
+    
+    // Busca horários comparando a string YYYY-MM-DD
+    const hours = form.data ? (agenda.find(i => {
+        const d = form.data;
+        const dataString = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return i.data === dataString;
+    })?.horarios || []) : [];
 
     return (
         <ModalBase title="Agendar Retorno" onClose={onCancel} styles={styles}>
@@ -305,19 +365,25 @@ const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
                     value={form.unidadeId} onChange={e => setForm({...form, unidadeId: e.target.value, data: null, horario: ''})}
                     style={{ width: '100%', padding: '12px', borderRadius: '12px', border: `1px solid ${styles.colors.border}`, backgroundColor: styles.colors.white }}
                 >
-                    <option value="">Selecione...</option>
+                    <option value="">Selecione a unidade...</option>
                     {unidades.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
                 </select>
             </div>
             
-            {form.unidadeId && (
-                <div style={{ display: 'flex', gap: '20px' }}>
+            {/* Loading visual */}
+            {loading && <p style={{fontSize: '12px', color: styles.colors.primary, textAlign: 'center'}}>Buscando horários...</p>}
+
+            {!loading && form.unidadeId && (
+                <div style={{ display: 'flex', flexDirection: styles.isMobile ? 'column' : 'row', gap: '20px' }}>
                     <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: styles.colors.textMuted, marginBottom: '8px' }}>DATA</label>
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
                             <DatePicker 
-                                selected={form.data} onChange={d => setForm({...form, data: d, horario: ''})} 
-                                includeDates={dates} inline 
+                                selected={form.data} 
+                                onChange={d => setForm({...form, data: d, horario: ''})} 
+                                includeDates={dates} 
+                                inline 
+                                calendarClassName="custom-calendar" // Se quiser estilizar via CSS
                             />
                         </div>
                     </div>
@@ -327,21 +393,24 @@ const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
                             {hours.map(h => (
                                 <button key={h} onClick={() => setForm({...form, horario: h})}
                                     style={{
-                                        padding: '8px', borderRadius: '8px', border: `1px solid ${form.horario === h ? styles.colors.primary : styles.colors.border}`,
+                                        padding: '8px', borderRadius: '8px', 
+                                        border: `1px solid ${form.horario === h ? styles.colors.primary : styles.colors.border}`,
                                         backgroundColor: form.horario === h ? styles.colors.primary : 'transparent',
-                                        color: form.horario === h ? '#fff' : styles.colors.textDark, cursor: 'pointer'
+                                        color: form.horario === h ? '#fff' : styles.colors.textDark, cursor: 'pointer',
+                                        transition: 'all 0.2s'
                                     }}
                                 >
                                     {h.substring(0, 5)}
                                 </button>
                             ))}
-                            {hours.length === 0 && <span style={{fontSize:'12px', color: styles.colors.textMuted}}>Sem horários.</span>}
+                            {hours.length === 0 && <div style={{gridColumn: 'span 2', textAlign: 'center', padding: '20px', color: styles.colors.textMuted, fontSize: '13px'}}>Selecione uma data disponível.</div>}
                         </div>
                     </div>
                 </div>
             )}
             
-            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <ActionButton variant="secondary" onClick={onCancel} styles={styles}>Cancelar</ActionButton>
                 <ActionButton variant="success" onClick={handleAgendar} disabled={!form.horario} styles={styles}>Confirmar Retorno</ActionButton>
             </div>
         </ModalBase>
