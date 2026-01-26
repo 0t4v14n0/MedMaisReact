@@ -285,7 +285,7 @@ const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
                         idUnidade: form.unidadeId, 
                         idMedico: medicoId.toString(), 
                         periodoEmDias: 45,
-                        tipo: 'RETORNO' // OBRIGATÓRIO
+                        tipo: 'PRESENCIAL'
                     });
 
                     const urlCompleta = `/agenda/medico/datas-horarios-disponiveis?${params}`;
