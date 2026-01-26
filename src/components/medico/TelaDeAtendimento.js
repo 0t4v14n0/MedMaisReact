@@ -269,52 +269,39 @@ const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
            .then(res => setUnidades(res.data.content || res.data || []))
            .catch(() => mostrarToast("Erro ao carregar unidades", "error"));
     }, []);
-        useEffect(() => {
-                
-                // Verificação explícita
-                if (!form.unidadeId) console.warn(">>> BLOQUEADO: Unidade não selecionada");
-                if (!medicoId) console.warn(">>> BLOQUEADO: ID do Médico é inválido/nulo");
 
-                if(form.unidadeId && medicoId) {
-                    console.log("3. DADOS OK. MONTANDO REQUISIÇÃO...");
-                    
-                    setLoading(true);
-                    setAgenda([]); 
-                    
-                    const params = new URLSearchParams({ 
-                        idUnidade: form.unidadeId, 
-                        idMedico: medicoId.toString(), 
-                        periodoEmDias: 45,
-                        tipo: 'PRESENCIAL'
-                    });
+    useEffect(() => {
+        // Verificação explícita
+        if(form.unidadeId && medicoId) {
+            setLoading(true);
+            setAgenda([]); 
+            
+            const params = new URLSearchParams({ 
+                idUnidade: form.unidadeId, 
+                idMedico: medicoId.toString(), 
+                periodoEmDias: 45,
+                tipo: 'PRESENCIAL' // Mantendo o ajuste para evitar erro 500 no backend
+            });
 
-                    const urlCompleta = `/agenda/medico/datas-horarios-disponiveis?${params}`;
+            const urlCompleta = `/agenda/medico/datas-horarios-disponiveis?${params}`;
 
-                    api.get(urlCompleta)
-                        .then(res => {
-                            setAgenda(res.data || []);
-                        })
-                        .catch(err => {
-                            // IMPORTANTE: Mostra se foi 404, 400, 500 ou Network Error
-                            if (err.response) {
-                                console.error("STATUS:", err.response.status);
-                                console.error("DADOS:", err.response.data);
-                            } else {
-                                console.error("ERRO DE REDE/CORS (Nem chegou no server)");
-                            }
-                            mostrarToast("Erro ao buscar agenda.", "error");
-                        })
-                        .finally(() => setLoading(false));
-                }
-        }, [form.unidadeId, medicoId]);
+            api.get(urlCompleta)
+                .then(res => {
+                    setAgenda(res.data || []);
+                })
+                .catch(err => {
+                    console.error("Erro na busca da agenda:", err);
+                    mostrarToast("Erro ao buscar agenda.", "error");
+                })
+                .finally(() => setLoading(false));
+        }
+    }, [form.unidadeId, medicoId]);
 
     const handleAgendar = async () => {
         if(!form.data || !form.horario) return mostrarToast("Selecione data e horário.", "error");
         
         try {
-            // 3. Tratamento de Fuso Horário (Fix para datas incorretas)
-            // O toISOString() pode pegar o dia anterior dependendo do fuso. 
-            // Usamos 'sv-SE' para forçar o formato YYYY-MM-DD localmente.
+            // Tratamento de Fuso Horário
             const year = form.data.getFullYear();
             const month = String(form.data.getMonth() + 1).padStart(2, '0');
             const day = String(form.data.getDate()).padStart(2, '0');
@@ -337,7 +324,6 @@ const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
 
     // Ajuste seguro para renderização das datas
     const dates = agenda.map(i => { 
-        // Força interpretação da data como local para evitar problemas de -3h (Brasil)
         const [y,m,d] = i.data.split('-'); 
         return new Date(y, m-1, d); 
     });
@@ -362,7 +348,6 @@ const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
                 </select>
             </div>
             
-            {/* Loading visual */}
             {loading && <p style={{fontSize: '12px', color: styles.colors.primary, textAlign: 'center'}}>Buscando horários...</p>}
 
             {!loading && form.unidadeId && (
@@ -375,7 +360,7 @@ const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
                                 onChange={d => setForm({...form, data: d, horario: ''})} 
                                 includeDates={dates} 
                                 inline 
-                                calendarClassName="custom-calendar" // Se quiser estilizar via CSS
+                                calendarClassName="custom-calendar"
                             />
                         </div>
                     </div>
@@ -454,8 +439,8 @@ const TelaDeAtendimento = ({ consulta, onVoltar }) => {
     useEffect(() => {
         if (pessoa.id) {
             api.get(`/historicodoenca/all/${pessoa.id}`)
-               .then(res => setHistorico(res.data.content || []))
-               .catch(err => console.error("Erro histórico", err));
+                .then(res => setHistorico(res.data.content || []))
+                .catch(err => console.error("Erro histórico", err));
         }
     }, [pessoa.id]);
 
@@ -491,138 +476,142 @@ const TelaDeAtendimento = ({ consulta, onVoltar }) => {
     };
 
     return (
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: isMobile ? '10px' : '30px' }}>
+        // 🔹 ALTERAÇÃO AQUI: Wrapper para o fundo da tela (rgb(229, 255, 253)) 🔹
+        <div style={{ backgroundColor: 'rgb(229, 255, 253)', minHeight: '100vh', width: '100%' }}>
             
-            {/* TOAST */}
-            {toast.show && (
-                <div style={{
-                    position: 'fixed', top: '24px', right: '24px', padding: '16px 24px', borderRadius: '12px',
-                    backgroundColor: colors.white, borderLeft: `6px solid ${toast.type === 'success' ? colors.success : colors.danger}`,
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 1200, display: 'flex', alignItems: 'center', gap: '10px',
-                    animation: 'slideIn 0.3s ease-out'
-                }}>
-                    <strong>{toast.type === 'success' ? 'Sucesso' : 'Atenção'}</strong> {toast.msg}
-                </div>
-            )}
-
-            {/* HEADER PACIENTE */}
-            <div style={{ backgroundColor: colors.white, borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <img 
-                            src={pessoa.fotoPerfilUrl || `https://ui-avatars.com/api/?name=${pessoa.nome}&background=random`} 
-                            style={{ width: '80px', height: '80px', borderRadius: '24px', objectFit: 'cover' }} 
-                            alt="Paciente" 
-                        />
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: colors.textDark }}>{pessoa.nome}</h1>
-                            <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
-                                <VitalCard icon={<FiUser />} label="Idade" value={getIdade(pessoa.dataNascimento)} color={colors.primary} styles={styles} />
-                                <VitalCard icon={<FiActivity />} label="IMC" value={paciente.imc?.toFixed(2)} color={colors.success} styles={styles} />
-                                <VitalCard icon={<FiHeart />} label="Sanguíneo" value={paciente.tipoSanguineo} color={colors.danger} styles={styles} />
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <ActionButton variant="secondary" onClick={() => setModal({type: 'EXAME'})} styles={styles} icon={<FiFileText />}>Solicitar Exames</ActionButton>
-                        <ActionButton variant="secondary" onClick={() => setModal({type: 'RETORNO'})} styles={styles} icon={<FiCalendar />}>Agendar Retorno</ActionButton>
-                        <ActionButton variant="danger" onClick={onVoltar} styles={styles} icon={<FiArrowLeft />}>Sair</ActionButton>
-                    </div>
-                </div>
-            </div>
-
-            {/* MAIN GRID */}
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '350px 1fr', gap: '24px' }}>
+            <div style={{ maxWidth: '1400px', margin: '0 auto', padding: isMobile ? '10px' : '30px' }}>
                 
-                {/* SIDEBAR: HISTÓRICO */}
-                <div>
-                    <div style={{ backgroundColor: colors.white, borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', height: 'fit-content' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: colors.textDark }}>Histórico Clínico</h3>
-                            <button onClick={() => setModal({type: 'HISTORICO'})} style={{ background: colors.primary, color: '#fff', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiPlus /></button>
+                {/* TOAST */}
+                {toast.show && (
+                    <div style={{
+                        position: 'fixed', top: '24px', right: '24px', padding: '16px 24px', borderRadius: '12px',
+                        backgroundColor: colors.white, borderLeft: `6px solid ${toast.type === 'success' ? colors.success : colors.danger}`,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)', zIndex: 1200, display: 'flex', alignItems: 'center', gap: '10px',
+                        animation: 'slideIn 0.3s ease-out'
+                    }}>
+                        <strong>{toast.type === 'success' ? 'Sucesso' : 'Atenção'}</strong> {toast.msg}
+                    </div>
+                )}
+
+                {/* HEADER PACIENTE */}
+                <div style={{ backgroundColor: colors.white, borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                            <img 
+                                src={pessoa.fotoPerfilUrl || `https://ui-avatars.com/api/?name=${pessoa.nome}&background=random`} 
+                                style={{ width: '80px', height: '80px', borderRadius: '24px', objectFit: 'cover' }} 
+                                alt="Paciente" 
+                            />
+                            <div>
+                                <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '800', color: colors.textDark }}>{pessoa.nome}</h1>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
+                                    <VitalCard icon={<FiUser />} label="Idade" value={getIdade(pessoa.dataNascimento)} color={colors.primary} styles={styles} />
+                                    <VitalCard icon={<FiActivity />} label="IMC" value={paciente.imc?.toFixed(2)} color={colors.success} styles={styles} />
+                                    <VitalCard icon={<FiHeart />} label="Sanguíneo" value={paciente.tipoSanguineo} color={colors.danger} styles={styles} />
+                                </div>
+                            </div>
                         </div>
                         
-                        {historico.length === 0 ? (
-                            <p style={{ textAlign: 'center', color: colors.textMuted, fontSize: '14px', fontStyle: 'italic' }}>Nenhum registro anterior.</p>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {historico.map(h => (
-                                    <div key={h.id} style={{ padding: '16px', borderRadius: '16px', backgroundColor: colors.background, border: `1px solid ${colors.borderLight}` }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                            <strong style={{ color: colors.textDark, fontSize: '14px' }}>{h.nomeDoenca}</strong>
-                                            <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: h.estadoAtual === 'ATIVA' ? `${colors.warning}20` : `${colors.success}20`, color: h.estadoAtual === 'ATIVA' ? colors.warning : colors.success, fontWeight: 'bold' }}>{h.estadoAtual}</span>
-                                        </div>
-                                        <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: colors.textMuted }}>{new Date(h.dataDiagnostico).toLocaleDateString('pt-BR')}</p>
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                            <button onClick={() => setModal({type: 'HISTORICO', data: h})} style={{ background: 'none', border: 'none', color: colors.primary, cursor: 'pointer' }}><FiEdit2 size={14}/></button>
-                                            <button onClick={() => deleteHistorico(h.id)} style={{ background: 'none', border: 'none', color: colors.danger, cursor: 'pointer' }}><FiTrash2 size={14}/></button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* MAIN: SOAP */}
-                <div>
-                    <div style={{ backgroundColor: colors.white, borderRadius: '24px', padding: '30px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
-                            <div>
-                                <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: colors.textDark }}>Registro de Consulta</h2>
-                                <p style={{ margin: 0, color: colors.textMuted }}>Preencha o prontuário eletrônico (SOAP)</p>
-                            </div>
-                            <ActionButton onClick={handleSalvarConsulta} variant="success" icon={<FiSave />} styles={styles}>Finalizar Atendimento</ActionButton>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <ActionButton variant="secondary" onClick={() => setModal({type: 'EXAME'})} styles={styles} icon={<FiFileText />}>Solicitar Exames</ActionButton>
+                            <ActionButton variant="secondary" onClick={() => setModal({type: 'RETORNO'})} styles={styles} icon={<FiCalendar />}>Agendar Retorno</ActionButton>
+                            <ActionButton variant="danger" onClick={onVoltar} styles={styles} icon={<FiArrowLeft />}>Sair</ActionButton>
                         </div>
-
-                        <SoapCard letter="S" title="Subjetivo" color="#3b82f6" styles={styles}>
-                            <ModernInput 
-                                rows={4} 
-                                value={formData.subjetivo} 
-                                onChange={e => setFormData({...formData, subjetivo: e.target.value})}
-                                placeholder="Queixa principal, história da moléstia atual, histórico..."
-                                styles={styles}
-                            />
-                        </SoapCard>
-
-                        <SoapCard letter="O" title="Objetivo" color="#10b981" styles={styles}>
-                            <ModernInput 
-                                rows={4} 
-                                value={formData.objetivo} 
-                                onChange={e => setFormData({...formData, objetivo: e.target.value})}
-                                placeholder="Exame físico, sinais vitais, resultados de exames..."
-                                styles={styles}
-                            />
-                        </SoapCard>
-
-                        <SoapCard letter="A" title="Avaliação" color="#f59e0b" styles={styles}>
-                            <ModernInput 
-                                rows={3} 
-                                value={formData.avaliacao} 
-                                onChange={e => setFormData({...formData, avaliacao: e.target.value})}
-                                placeholder="Hipótese diagnóstica, raciocínio clínico..."
-                                styles={styles}
-                            />
-                        </SoapCard>
-
-                        <SoapCard letter="P" title="Plano" color="#ef4444" styles={styles}>
-                            <ModernInput 
-                                rows={4} 
-                                value={formData.plano} 
-                                onChange={e => setFormData({...formData, plano: e.target.value})}
-                                placeholder="Prescrições, solicitações, orientações, retorno..."
-                                styles={styles}
-                            />
-                        </SoapCard>
                     </div>
                 </div>
-            </div>
 
-            {/* RENDERING MODALS */}
-            {modal.type === 'EXAME' && <ModalSolicitarExame consulta={consulta} onCancel={() => setModal({type: null})} styles={styles} mostrarToast={mostrarToast} />}
-            {modal.type === 'RETORNO' && <ModalAgendarRetorno consulta={consulta} onCancel={() => setModal({type: null})} styles={styles} mostrarToast={mostrarToast} />}
-            {modal.type === 'HISTORICO' && <ModalHistoricoPaciente doenca={modal.data} onSave={handleHistoricoAction} onCancel={() => setModal({type: null})} styles={styles} />}
+                {/* MAIN GRID */}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '350px 1fr', gap: '24px' }}>
+                    
+                    {/* SIDEBAR: HISTÓRICO */}
+                    <div>
+                        <div style={{ backgroundColor: colors.white, borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', height: 'fit-content' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: colors.textDark }}>Histórico Clínico</h3>
+                                <button onClick={() => setModal({type: 'HISTORICO'})} style={{ background: colors.primary, color: '#fff', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiPlus /></button>
+                            </div>
+                            
+                            {historico.length === 0 ? (
+                                <p style={{ textAlign: 'center', color: colors.textMuted, fontSize: '14px', fontStyle: 'italic' }}>Nenhum registro anterior.</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {historico.map(h => (
+                                        <div key={h.id} style={{ padding: '16px', borderRadius: '16px', backgroundColor: colors.background, border: `1px solid ${colors.borderLight}` }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                <strong style={{ color: colors.textDark, fontSize: '14px' }}>{h.nomeDoenca}</strong>
+                                                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: h.estadoAtual === 'ATIVA' ? `${colors.warning}20` : `${colors.success}20`, color: h.estadoAtual === 'ATIVA' ? colors.warning : colors.success, fontWeight: 'bold' }}>{h.estadoAtual}</span>
+                                            </div>
+                                            <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: colors.textMuted }}>{new Date(h.dataDiagnostico).toLocaleDateString('pt-BR')}</p>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                <button onClick={() => setModal({type: 'HISTORICO', data: h})} style={{ background: 'none', border: 'none', color: colors.primary, cursor: 'pointer' }}><FiEdit2 size={14}/></button>
+                                                <button onClick={() => deleteHistorico(h.id)} style={{ background: 'none', border: 'none', color: colors.danger, cursor: 'pointer' }}><FiTrash2 size={14}/></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* MAIN: SOAP */}
+                    <div>
+                        <div style={{ backgroundColor: colors.white, borderRadius: '24px', padding: '30px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: colors.textDark }}>Registro de Consulta</h2>
+                                    <p style={{ margin: 0, color: colors.textMuted }}>Preencha o prontuário eletrônico (SOAP)</p>
+                                </div>
+                                <ActionButton onClick={handleSalvarConsulta} variant="success" icon={<FiSave />} styles={styles}>Finalizar Atendimento</ActionButton>
+                            </div>
+
+                            <SoapCard letter="S" title="Subjetivo" color="#3b82f6" styles={styles}>
+                                <ModernInput 
+                                    rows={4} 
+                                    value={formData.subjetivo} 
+                                    onChange={e => setFormData({...formData, subjetivo: e.target.value})}
+                                    placeholder="Queixa principal, história da moléstia atual, histórico..."
+                                    styles={styles}
+                                />
+                            </SoapCard>
+
+                            <SoapCard letter="O" title="Objetivo" color="#10b981" styles={styles}>
+                                <ModernInput 
+                                    rows={4} 
+                                    value={formData.objetivo} 
+                                    onChange={e => setFormData({...formData, objetivo: e.target.value})}
+                                    placeholder="Exame físico, sinais vitais, resultados de exames..."
+                                    styles={styles}
+                                />
+                            </SoapCard>
+
+                            <SoapCard letter="A" title="Avaliação" color="#f59e0b" styles={styles}>
+                                <ModernInput 
+                                    rows={3} 
+                                    value={formData.avaliacao} 
+                                    onChange={e => setFormData({...formData, avaliacao: e.target.value})}
+                                    placeholder="Hipótese diagnóstica, raciocínio clínico..."
+                                    styles={styles}
+                                />
+                            </SoapCard>
+
+                            <SoapCard letter="P" title="Plano" color="#ef4444" styles={styles}>
+                                <ModernInput 
+                                    rows={4} 
+                                    value={formData.plano} 
+                                    onChange={e => setFormData({...formData, plano: e.target.value})}
+                                    placeholder="Prescrições, solicitações, orientações, retorno..."
+                                    styles={styles}
+                                />
+                            </SoapCard>
+                        </div>
+                    </div>
+                </div>
+
+                {/* RENDERING MODALS */}
+                {modal.type === 'EXAME' && <ModalSolicitarExame consulta={consulta} onCancel={() => setModal({type: null})} styles={styles} mostrarToast={mostrarToast} />}
+                {modal.type === 'RETORNO' && <ModalAgendarRetorno consulta={consulta} onCancel={() => setModal({type: null})} styles={styles} mostrarToast={mostrarToast} />}
+                {modal.type === 'HISTORICO' && <ModalHistoricoPaciente doenca={modal.data} onSave={handleHistoricoAction} onCancel={() => setModal({type: null})} styles={styles} />}
+            </div>
         </div>
     );
 };
