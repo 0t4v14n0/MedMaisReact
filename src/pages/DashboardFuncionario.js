@@ -29,7 +29,6 @@ const SidebarItem = ({ icon, label, active, onClick, styles }) => (
             display: 'flex', alignItems: 'center', gap: '12px',
             padding: '12px 20px', margin: '4px 12px', borderRadius: '12px',
             cursor: 'pointer', transition: 'all 0.2s ease',
-            // ✨ AQUI: Usa a cor da Role (Roxo) para o fundo ativo e texto
             backgroundColor: active ? ROLE_BG_TINT : 'transparent',
             color: active ? ROLE_COLOR : styles.colors.textMuted,
             fontWeight: active ? '700' : '500',
@@ -42,7 +41,6 @@ const SidebarItem = ({ icon, label, active, onClick, styles }) => (
 );
 
 const QuickActionCard = ({ title, desc, icon, onClick, styles, color }) => {
-    // Se não passar cor específica, usa a da Role (Roxo)
     const iconColor = color || ROLE_COLOR; 
     const bgTint = `${iconColor}15`;
 
@@ -58,7 +56,6 @@ const QuickActionCard = ({ title, desc, icon, onClick, styles, color }) => {
             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
         >
-            {/* Detalhe decorativo no topo com a cor específica do card */}
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', backgroundColor: iconColor }}></div>
 
             <div style={{ 
@@ -88,8 +85,8 @@ const DashboardFuncionario = () => {
     const styles = generateStyles(isDarkMode);
     const { colors } = styles;
 
-    // Fundo neutro para contraste (Off-white ou Dark Gray)
-    const dashboardBgColor = isDarkMode ? '#121212' : '#f3f4f6';
+    // 🔹 ALTERAÇÃO AQUI: Fundo RGB solicitado 🔹
+    const dashboardBgColor = isDarkMode ? '#121212' : 'rgb(229, 255, 253)';
 
     const [opcaoSelecionada, setOpcaoSelecionada] = useState('Home');
     const [menuAberto, setMenuAberto] = useState(false);
@@ -113,58 +110,60 @@ const DashboardFuncionario = () => {
     };
 
     const renderConteudo = () => {
+        const containerStyle = { padding: isMobile ? '20px' : '40px' };
+
         switch (opcaoSelecionada) {
-            case "MeusDados": return <MeusDadosFuncionario />;
-            case "Holerites": return <MeusContracheques />;
-            case "Ferias": return <SolicitarFerias />;
-            case "Comunicados": return <VerComunicados />;
+            case "MeusDados": return <div style={containerStyle}><MeusDadosFuncionario /></div>;
+            case "Holerites": return <div style={containerStyle}><MeusContracheques /></div>;
+            case "Ferias": return <div style={containerStyle}><SolicitarFerias /></div>;
+            case "Comunicados": return <div style={containerStyle}><VerComunicados /></div>;
             default: return (
-                <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '10px' : '30px' }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '20px' : '40px' }}>
                     <div style={{ marginBottom: '40px' }}>
-                        <h1 style={{ fontSize: '28px', fontWeight: '800', color: colors.textDark, marginBottom: '10px' }}>
+                        <h1 style={{ fontSize: isMobile ? '24px' : '32px', fontWeight: '800', color: colors.textDark, marginBottom: '10px' }}>
                             Portal do <span style={{ color: ROLE_COLOR }}>Colaborador</span> 👋
                         </h1>
-                        <p style={{ color: colors.textMuted, fontSize: '16px' }}>
-                            Acesse suas informações trabalhistas e comunicados.
+                        <p style={{ color: colors.textMuted, fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>
+                            Acesse suas informações trabalhistas, planeje suas férias e fique por dentro dos comunicados da empresa.
                         </p>
                     </div>
 
                     <div style={{ 
                         display: 'grid', 
                         gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))', 
-                        gap: '20px' 
+                        gap: '24px' 
                     }}>
                         <QuickActionCard 
                             title="Meus Holerites" 
                             desc="Visualize e baixe seus demonstrativos de pagamento mensais."
                             icon={<FiFileText />} 
-                            onClick={() => setOpcaoSelecionada('Holerites')} 
+                            onClick={() => handleMenuClick('Holerites')} 
                             styles={styles} 
-                            color={colors.success} // Mantive verde pois remete a dinheiro
+                            color={colors.success}
                         />
                         <QuickActionCard 
                             title="Solicitar Férias" 
                             desc="Planeje seu descanso e envie solicitações ao RH."
                             icon={<FiSun />} 
-                            onClick={() => setOpcaoSelecionada('Ferias')} 
+                            onClick={() => handleMenuClick('Ferias')} 
                             styles={styles} 
-                            color="#f59e0b" // Laranja (sol/férias)
+                            color="#f59e0b"
                         />
                         <QuickActionCard 
                             title="Comunicados" 
                             desc="Fique por dentro das novidades e avisos da empresa."
                             icon={<FiBell />} 
-                            onClick={() => setOpcaoSelecionada('Comunicados')} 
+                            onClick={() => handleMenuClick('Comunicados')} 
                             styles={styles} 
-                            color={ROLE_COLOR} // Roxo (Avisos/Geral)
+                            color={ROLE_COLOR}
                         />
                         <QuickActionCard 
                             title="Meus Dados" 
                             desc="Mantenha suas informações cadastrais atualizadas."
                             icon={<FiUser />} 
-                            onClick={() => setOpcaoSelecionada('MeusDados')} 
+                            onClick={() => handleMenuClick('MeusDados')} 
                             styles={styles}
-                            color={colors.primary} // Azul padrão (Dados)
+                            color={colors.primary}
                         />
                     </div>
                 </div>
@@ -173,7 +172,7 @@ const DashboardFuncionario = () => {
     };
 
     return (
-        <div style={{ display: 'flex', height: '100vh', backgroundColor: dashboardBgColor, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
             
             {/* Overlay Mobile */}
             {isMobile && menuAberto && (
@@ -195,7 +194,6 @@ const DashboardFuncionario = () => {
             }}>
                 <div style={{ padding: '30px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                        {/* Logo com a cor Roxa */}
                         <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: ROLE_COLOR, letterSpacing: '-0.5px' }}>medMais</h2>
                         <span style={{ fontSize: '11px', color: colors.textMuted, letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: '700' }}>Colaborador</span>
                     </div>
@@ -214,8 +212,7 @@ const DashboardFuncionario = () => {
                 </ul>
 
                 <div style={{ padding: '20px', borderTop: `1px solid ${colors.borderLight}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: dashboardBgColor, borderRadius: '12px' }}>
-                        {/* Avatar Roxo */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: ROLE_COLOR, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <FiUser />
                         </div>
@@ -227,8 +224,15 @@ const DashboardFuncionario = () => {
                 </div>
             </aside>
 
-            {/* Conteúdo Principal */}
-            <main style={{ flex: 1, overflowY: 'auto', position: 'relative', width: '100%' }}>
+            {/* Conteúdo Principal com o Fundo RGB */}
+            <main style={{ 
+                flex: 1, 
+                backgroundColor: dashboardBgColor, // Aplica a cor aqui
+                overflowY: 'auto', 
+                position: 'relative', 
+                width: '100%',
+                transition: 'background-color 0.3s ease'
+            }}>
                 {/* Header Mobile */}
                 {isMobile && (
                     <div style={{ 
