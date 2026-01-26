@@ -270,10 +270,6 @@ const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
            .catch(() => mostrarToast("Erro ao carregar unidades", "error"));
     }, []);
         useEffect(() => {
-                // --- DEBUG DE RASTREAMENTO ---
-                console.log("--- TENTATIVA DE BUSCAR AGENDA ---");
-                console.log("1. ID Unidade:", form.unidadeId);
-                console.log("2. ID Médico:", medicoId);
                 
                 // Verificação explícita
                 if (!form.unidadeId) console.warn(">>> BLOQUEADO: Unidade não selecionada");
@@ -293,16 +289,12 @@ const ModalAgendarRetorno = ({ consulta, onCancel, styles, mostrarToast }) => {
                     });
 
                     const urlCompleta = `/agenda/medico/datas-horarios-disponiveis?${params}`;
-                    console.log("4. URL GERADA:", urlCompleta);
-                    console.log("5. DISPARANDO AXIOS AGORA...");
 
                     api.get(urlCompleta)
                         .then(res => {
-                            console.log("6. SUCESSO! RESPOSTA DO BACKEND:", res.data);
                             setAgenda(res.data || []);
                         })
                         .catch(err => {
-                            console.error("6. ERRO NA VOLTA DO BACKEND:", err);
                             // IMPORTANTE: Mostra se foi 404, 400, 500 ou Network Error
                             if (err.response) {
                                 console.error("STATUS:", err.response.status);
