@@ -340,7 +340,15 @@ export default function Registro() {
                                 </div>
                                 <div style={styles.inputGroup}>
                                     <label style={styles.label}>Contato de Emergência</label>
-                                    <input name="contatoEmergencia" value={formData.contatoEmergencia} style={styles.input} placeholder="Nome e telefone" onChange={handleChange} />
+                                    {/* ALTERADO AQUI: type="number" e placeholder */}
+                                    <input 
+                                        name="contatoEmergencia" 
+                                        type="number" 
+                                        value={formData.contatoEmergencia} 
+                                        style={styles.input} 
+                                        placeholder="Telefone de emergência (apenas números)" 
+                                        onChange={handleChange} 
+                                    />
                                     <ErrorMessage name="contatoEmergencia" />
                                 </div>
                             </div>
