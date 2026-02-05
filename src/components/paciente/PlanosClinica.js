@@ -435,22 +435,30 @@ const PlanosClinicas = () => {
     const [toast, setToast] = useState({ show: false, message: '' });
     const navigate = useNavigate();
 
-    // Buscar Planos e Saldo
+    // =========================================================
+    // IMPLEMENTAÇÃO DE BUSCA (ATUALIZADA)
+    // =========================================================
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Busca Planos
+                // 1. Busca Planos
                 const resPlanos = await api.get('/plano/all');
                 const planosOrdenados = (resPlanos.data || []).sort((a, b) => a.valorMensalidade - b.valorMensalidade);
                 setPlanos(planosOrdenados);
 
-                // Busca Saldo
+                // 2. Busca Saldo (USANDO O ENDPOINT DO PROFILE)
                 try {
-                    const resPaciente = await api.get('/paciente/meus-dados'); 
-                    setSaldoUsuario(resPaciente.data.saldo || 0); 
+                    // Usamos o mesmo endpoint do UserProfile
+                    const resProfile = await api.get('/pessoa/dados/profile');
+                    
+                    // Acessamos o saldo no mesmo caminho que o UserProfile faz:
+                    // pessoaData?.dataDetalhesPessoa?.saldo
+                    const saldoEncontrado = resProfile.data?.dataDetalhesPessoa?.saldo;
+                    
+                    setSaldoUsuario(saldoEncontrado || 0); 
                 } catch (e) {
-                    console.warn("Não foi possível carregar o saldo ou endpoint inexistente.");
+                    console.warn("Erro ao carregar saldo do perfil:", e);
                     setSaldoUsuario(0);
                 }
 

@@ -226,7 +226,7 @@ const DashboardPaciente = () => {
                     ))}
                 </ul>
 
-                <div style={{ padding: '20px', borderTop: `1px solid ${colors.borderLight}` }}>
+                {/* <div style={{ padding: '20px', borderTop: `1px solid ${colors.borderLight}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: colors.background, borderRadius: '12px' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: colors.success, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <FiUser />
@@ -236,7 +236,7 @@ const DashboardPaciente = () => {
                             <p style={{ margin: 0, fontSize: '11px', color: colors.textMuted }}>Paciente</p>
                         </div>
                     </div>
-                </div>
+                </div> */}
             </aside>
 
             {/* Conteúdo Principal */}
