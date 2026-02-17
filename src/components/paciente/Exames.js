@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../api/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import { generateStyles } from '../../styles/globalStyles';
@@ -73,7 +72,7 @@ const ActionButton = ({ children, onClick, disabled, loading, styles, variant = 
     );
 };
 
-// Card de Opção Selecionável (Para Tipo de Coleta e Unidades)
+// Card de Opção Selecionável
 const SelectionCard = ({ selected, onClick, title, subtitle, icon, styles }) => (
     <div 
         onClick={onClick}
@@ -95,12 +94,11 @@ const SelectionCard = ({ selected, onClick, title, subtitle, icon, styles }) => 
     </div>
 );
 
-// Badge de Status do Pedido
+// Badge de Status
 const OrderStatusBadge = ({ status, styles }) => {
     let bg = styles.colors.lightGray;
     let color = styles.colors.textMuted;
     
-    // Mapeamento de status
     if (['CONCLUIDO', 'FINALIZADO', 'LAUDO_DISPONIVEL'].includes(status)) { bg = `${styles.colors.success}20`; color = styles.colors.success; }
     else if (['PENDENTE', 'EM_ANALISE', 'AGUARDANDO_PAGAMENTO'].includes(status)) { bg = `${styles.colors.warning}20`; color = styles.colors.warning; }
     else if (['CANCELADO', 'RECUSADO'].includes(status)) { bg = `${styles.colors.danger}20`; color = styles.colors.danger; }
@@ -114,11 +112,11 @@ const OrderStatusBadge = ({ status, styles }) => {
 };
 
 // =================================================================
-// SUB-COMPONENTE: SOLICITAR EXAMES
+// SUB-COMPONENTE: SOLICITAR EXAMES (CORRIGIDO)
 // =================================================================
 const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
     const { colors } = styles;
-    const [etapa, setEtapa] = useState('TIPO'); // TIPO -> UNIDADE -> EXAMES -> AGENDAMENTO
+    const [etapa, setEtapa] = useState('TIPO'); 
     
     // Dados
     const [tipoColeta, setTipoColeta] = useState(null);
@@ -130,6 +128,9 @@ const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
     const [horarioSelecionado, setHorarioSelecionado] = useState(null);
     const [dataAgendamento, setDataAgendamento] = useState(new Date().toISOString().split('T')[0]);
     const [convenioInfo, setConvenioInfo] = useState(null);
+    
+    // Estado para armazenar as regras do plano
+    const [regrasPlano, setRegrasPlano] = useState([]);
 
     // Estados de Controle
     const [loading, setLoading] = useState(false);
@@ -149,14 +150,49 @@ const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
         setLoading(true);
         try {
             const endpoint = tipoColeta === 'UNIDADE' ? '/exame/all/ativo' : '/paciente/coleta-domiciliar/exames-elegiveis';
-            const [examesRes, convenioRes] = await Promise.all([
+            
+            const [examesRes, convenioRes, planoRes] = await Promise.allSettled([
                 api.get(endpoint),
-                api.get('/convenio/ativoUsuario')
+                api.get('/convenio/ativoUsuario'),
+                api.get('/paciente/plano/atual/exame')
             ]);
-            setExamesDisponiveis(examesRes.data || []);
-            setConvenioInfo(convenioRes.data || { ativo: false });
-        } catch (err) { mostrarToast("Erro ao buscar exames.", "error"); }
-        finally { setLoading(false); }
+
+            // 1. Exames
+            if (examesRes.status === 'fulfilled') {
+                setExamesDisponiveis(examesRes.value.data || []);
+            }
+
+            // 2. Convênio
+            if (convenioRes.status === 'fulfilled') {
+                setConvenioInfo(convenioRes.value.data || { ativo: false });
+            }
+
+            // 3. Plano (LÓGICA CORRIGIDA AQUI)
+            if (planoRes.status === 'fulfilled' && planoRes.value.data) {
+                const dados = planoRes.value.data;
+                // Detecta se é um Array direto ou se está dentro de um objeto (Wrapper/Page)
+                let regras = [];
+                
+                if (Array.isArray(dados)) {
+                    regras = dados;
+                } else if (dados.content && Array.isArray(dados.content)) {
+                    regras = dados.content; // Suporte a Spring Page
+                } else if (dados.dataExames && Array.isArray(dados.dataExames)) {
+                    regras = dados.dataExames; // Suporte ao DTO wrapper antigo se houver
+                }
+                
+                console.log("Regras de Plano carregadas:", regras);
+                setRegrasPlano(regras);
+            } else {
+                setRegrasPlano([]);
+            }
+
+        } catch (err) { 
+            console.error(err);
+            mostrarToast("Erro ao carregar dados.", "error"); 
+        } finally { 
+            setLoading(false); 
+        }
     }, [tipoColeta, mostrarToast]);
 
     const fetchHorarios = useCallback(async () => {
@@ -175,6 +211,46 @@ const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
         if (etapa === 'EXAMES') fetchExames();
         if (etapa === 'AGENDAMENTO') fetchHorarios();
     }, [etapa, fetchUnidades, fetchExames, fetchHorarios]);
+
+    // --- LÓGICA DE PRECIFICAÇÃO COM DESCONTO (CORRIGIDA) ---
+    const getPrecoExame = (exame) => {
+        const valorOriginal = Number(exame.valor);
+        
+        // Se não tiver regras, retorna preço cheio
+        if (!regrasPlano || regrasPlano.length === 0) {
+            return { original: valorOriginal, final: valorOriginal, temDesconto: false, percentual: 0 };
+        }
+
+        // Procura a regra correspondente ao exame
+        // O DTO Java é: DataDetalhePlanoExame { ExameDataDetalhes dataExame; ... }
+        const regra = regrasPlano.find(r => {
+            // Verifica se o objeto interno 'dataExame' existe antes de acessar o ID
+            if (!r.dataExame) return false;
+            
+            // Compara IDs como String para evitar problemas de tipo (number vs string)
+            return String(r.dataExame.id) === String(exame.id);
+        });
+
+        if (regra && regra.desconto && Number(regra.desconto) > 0) {
+            const descontoPercentual = Number(regra.desconto);
+            const valorDesconto = (valorOriginal * descontoPercentual) / 100;
+            const valorFinal = valorOriginal - valorDesconto;
+            
+            return {
+                original: valorOriginal,
+                final: valorFinal,
+                temDesconto: true,
+                percentual: descontoPercentual
+            };
+        }
+
+        return {
+            original: valorOriginal,
+            final: valorOriginal,
+            temDesconto: false,
+            percentual: 0
+        };
+    };
 
     // --- AÇÕES ---
     const handleToggleExame = (id) => {
@@ -207,11 +283,13 @@ const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
         }
     };
 
-    const totalPedido = examesDisponiveis.filter(e => examesSelecionados.includes(e.id)).reduce((acc, curr) => acc + curr.valor, 0);
+    // Cálculo do Total considerando os descontos
+    const totalPedido = examesDisponiveis
+        .filter(e => examesSelecionados.includes(e.id))
+        .reduce((acc, curr) => acc + getPrecoExame(curr).final, 0);
 
     // --- RENDERS ---
     
-    // 1. Tipo de Coleta
     if (etapa === 'TIPO') return (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
             <h2 style={{ fontSize: '20px', fontWeight: '700', color: colors.textDark, marginBottom: '20px', textAlign: 'center' }}>Como deseja realizar seus exames?</h2>
@@ -234,7 +312,6 @@ const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
         </div>
     );
 
-    // 2. Seleção de Unidade (Apenas para tipo UNIDADE)
     if (etapa === 'UNIDADE') return (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', gap: '10px' }}>
@@ -262,7 +339,6 @@ const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
         </div>
     );
 
-    // 3. Seleção de Exames (Comum a ambos)
     if (etapa === 'EXAMES') return (
         <div style={{ animation: 'fadeIn 0.3s ease', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: '24px' }}>
             {/* Lista de Exames */}
@@ -276,6 +352,9 @@ const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {examesDisponiveis.map(exame => {
                             const isSelected = examesSelecionados.includes(exame.id);
+                            // Usa a função de preço para exibir descontos
+                            const precoInfo = getPrecoExame(exame);
+
                             return (
                                 <div key={exame.id} onClick={() => handleToggleExame(exame.id)}
                                     style={{
@@ -287,11 +366,26 @@ const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
                                     }}
                                 >
                                     <div>
-                                        <div style={{ fontSize: '15px', fontWeight: '600', color: colors.textDark }}>{exame.nome}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ fontSize: '15px', fontWeight: '600', color: colors.textDark }}>{exame.nome}</div>
+                                            {precoInfo.temDesconto && (
+                                                <span style={{ fontSize: '10px', backgroundColor: '#16a34a', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                                    {precoInfo.percentual}% OFF
+                                                </span>
+                                            )}
+                                        </div>
                                         <div style={{ fontSize: '12px', color: colors.textMuted }}>{exame.preparacao || 'Sem preparo'}</div>
                                     </div>
-                                    <div style={{ fontSize: '14px', fontWeight: '700', color: colors.primary }}>
-                                        R$ {exame.valor.toFixed(2)}
+                                    
+                                    <div style={{ textAlign: 'right' }}>
+                                        {precoInfo.temDesconto && (
+                                            <div style={{ fontSize: '11px', textDecoration: 'line-through', color: colors.textMuted }}>
+                                                R$ {precoInfo.original.toFixed(2)}
+                                            </div>
+                                        )}
+                                        <div style={{ fontSize: '14px', fontWeight: '700', color: precoInfo.temDesconto ? '#16a34a' : colors.primary }}>
+                                            R$ {precoInfo.final.toFixed(2)}
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -308,12 +402,15 @@ const SolicitarExames = ({ mostrarToast, styles, isMobile, setVistaAtual }) => {
                     <p style={{ fontSize: '13px', color: colors.textMuted, textAlign: 'center', fontStyle: 'italic' }}>Nenhum exame selecionado.</p>
                 ) : (
                     <div style={{ marginBottom: '20px' }}>
-                        {examesDisponiveis.filter(e => examesSelecionados.includes(e.id)).map(e => (
-                            <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px', color: colors.textMuted }}>
-                                <span>{e.nome}</span>
-                                <span>R$ {e.valor.toFixed(2)}</span>
-                            </div>
-                        ))}
+                        {examesDisponiveis.filter(e => examesSelecionados.includes(e.id)).map(e => {
+                            const precoInfo = getPrecoExame(e);
+                            return (
+                                <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px', color: colors.textMuted }}>
+                                    <span>{e.nome}</span>
+                                    <span>R$ {precoInfo.final.toFixed(2)}</span>
+                                </div>
+                            );
+                        })}
                         <div style={{ borderTop: `1px dashed ${colors.border}`, margin: '16px 0' }} />
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: '700', color: colors.textDark }}>
                             <span>Total</span>
